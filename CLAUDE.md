@@ -118,13 +118,15 @@ should keep pulling from this pack, not the mockup's hardcoded values, as the so
 - **Sandcastles** (MCP) — video analytics. `/analyze` and `/create-format` use it; always
   `switch_workspace` into the client's own workspace by pinned UUID before any read.
 - **`python-docx`** (`pip install python-docx --break-system-packages`) — powers
-  `skills/.../produce/scripts/build_script_doc.py`, the Script Doc generator. Needs
-  `assets/logo.png` and `assets/comment_help.png` alongside it.
-- **Google Drive** — manual today: the generated `.docx` is opened in Drive by hand
-  (right-click → Open with → Google Docs) for client review via highlight-color + comments.
+  `skills/.../produce/scripts/build_script_doc.py`, the Script Doc generator, for anyone running the
+  skill by hand at a terminal. Needs `assets/logo.png` and `assets/comment_help.png` alongside it.
+  The `web/` app does **not** use this script or Python at all — it has its own from-scratch port
+  (`web/lib/scriptDocGenerator.ts`, using the `docx` npm package) kept in sync by hand with any
+  future changes to `build_script_doc.py`, so the hosted app has no Python dependency to deploy.
+- **Google Drive** — manual today for the CLI path; the `web/` app uploads automatically via a
+  service account.
 
 ## Going live
 
 The `web/` app (see above) is the real hosted build — admin-provisioned accounts, a chat UI that runs
-the engine per client, credentials in `web/.env`. Hosting platform is not yet decided (Vercel is
-being considered).
+the engine per client, credentials in `web/.env`. Hosting is on Vercel.
