@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shoot & Scale — App Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --tangerine:#FF4D12;--tangerine-600:#E63E08;--ink:#14110D;--stone:#6B655C;
+  --ember:#FDE2D8;--mist:#F6F4F0;--paper:#FFF;--line:#E9E5DF;--radius:12px;
+  --f:"Work Sans",system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--f);font-weight:400;color:var(--ink);background:var(--mist);font-size:15px;line-height:1.5}
+/* the ONLY place the heavy display face is used: the logo lockup */
+.wm{font-family:"Archivo Black";text-transform:uppercase;line-height:.9;letter-spacing:-.01em;display:inline-block}
+/* headings are Work Sans 600 — clean, not shouting, not uppercase */
+h1{font-size:22px;font-weight:600;margin:0;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
+h3{font-size:15px;font-weight:600;margin:0}
+p{margin:0}
+.muted{color:var(--stone)}
+.eyebrow{font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--stone)}
+.small{font-size:13px}
+.btn{font-family:var(--f);font-weight:500;font-size:15px;border:0;border-radius:var(--radius);padding:11px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn-primary{background:var(--tangerine);color:#fff}.btn-primary:hover{background:var(--tangerine-600)}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn-ink{background:var(--ink);color:#fff}
+.field{width:100%;font-family:var(--f);font-size:15px;font-weight:400;padding:11px 13px;border:1px solid var(--line);border-radius:var(--radius);background:#fff;color:var(--ink)}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius)}
+.panel{background:var(--mist);border-radius:var(--radius)}
+.pill{border-radius:999px;padding:5px 12px;font-size:12px;font-weight:500;background:var(--mist);color:var(--stone);border:1px solid var(--line);cursor:pointer}
+.pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tabs{display:flex;gap:6px;justify-content:center;padding:14px;background:var(--ink)}
+.tab{padding:8px 15px;border-radius:999px;font-weight:500;font-size:13px;cursor:pointer;color:#fff;opacity:.55}
+.tab.on{background:var(--tangerine);opacity:1}
+.screen{display:none;max-width:940px;margin:26px auto;padding:0 16px}.screen.on{display:block}
+.frame{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 8px 34px rgba(20,17,13,.07)}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.bubble{max-width:80%;white-space:pre-wrap;line-height:1.55;padding:12px 15px;border-radius:12px;margin-bottom:14px}
+.b-user{background:var(--ink);color:#fff;margin-left:auto}.b-ai{background:var(--mist)}
+select.field{width:auto;padding:8px 12px}
+.step{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+.num{flex:0 0 30px;height:30px;border-radius:999px;background:var(--ember);color:var(--tangerine-600);font-weight:600;display:grid;place-items:center;font-size:14px}
+.cmd{font-family:ui-monospace,Menlo,monospace;font-size:13px;background:var(--mist);border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--ink)}
+</style></head>
+<body>
+<div class="tabs">
+  <div class="tab on" onclick="show('login',this)">Sign in</div>
+  <div class="tab" onclick="show('chat',this)">Chat</div>
+  <div class="tab" onclick="show('guide',this)">Guide</div>
+  <div class="tab" onclick="show('admin',this)">Admin</div>
+</div>
+
+<!-- LOGIN -->
+<div class="screen on" id="login">
+  <div class="frame" style="max-width:400px;margin:44px auto;padding:36px">
+    <div class="wm" style="font-size:24px;color:var(--ink);margin-bottom:26px">SHOOT&nbsp;&amp;<br>SCALE</div>
+    <h1 style="margin-bottom:6px">Sign in</h1>
+    <p class="muted small" style="margin-bottom:20px">Welcome back to the content engine.</p>
+    <input class="field" style="margin-bottom:10px" placeholder="Email" value="editor@shootandscale.com">
+    <input class="field" style="margin-bottom:18px" type="password" placeholder="Password" value="••••••••">
+    <button class="btn btn-primary" style="width:100%;justify-content:center">Sign in</button>
+    <p class="muted small" style="margin-top:18px">Access is granted by Shoot &amp; Scale. Need an account? Ask your admin.</p>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="screen" id="chat">
+  <div class="frame">
+    <div class="hdr">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="wm" style="font-size:15px">SHOOT&nbsp;&amp; SCALE</div>
+        <span class="muted small">Content engine</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="muted small">Client</span>
+        <select class="field"><option>Devin Bender</option><option>Esteban Andrade</option></select>
+        <button class="btn btn-ghost small" style="padding:8px 12px">Sign out</button>
+      </div>
+    </div>
+    <div style="padding:24px;max-width:780px;margin:0 auto">
+      <div class="bubble b-user">run the engine for Devin Bender, produce 10</div>
+      <div class="bubble b-ai">On it. Everything's current for Devin — Snapshot, Bullseye, and last week's analysis all check out. Here's the format split I'd run for 10 scripts:
+
+• 3 × Says vs Means — his biggest winner, doubling down
+• 2 × 3 Things I'd Do — proven, on-niche
+• 2 × Myth-Bust — reach
+• 2 × Client Story — conversion
+• 1 × Get-Ready walkthrough — untested, worth a shot
+
+Want me to swap any of these before I write?</div>
+      <div class="bubble b-user">looks good, go</div>
+      <div class="bubble b-ai"><span class="muted small">Updating the client's docs…</span>
+
+Done — 10 scripts written and graded, packaged into the branded doc. Every hook came in strong.</div>
+      <div class="card" style="padding:14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div><h3>Devin Bender — Script Doc, Jul 13.docx</h3><p class="muted small">10 videos · ready to review in Drive</p></div>
+        <button class="btn btn-primary small" style="padding:9px 14px">Download</button>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--line);padding:14px 20px;display:flex;gap:10px;max-width:780px;margin:0 auto">
+      <input class="field" style="flex:1" placeholder="Message the engine about Devin Bender">
+      <button class="btn btn-primary">Send</button>
+    </div>
+  </div>
+</div>
+
+<!-- GUIDE / CHEAT SHEET -->
+<div class="screen" id="guide">
+  <div class="frame" style="padding:28px">
+    <p class="eyebrow" style="margin-bottom:6px">Cheat sheet</p>
+    <h1 style="margin-bottom:4px">How the engine works</h1>
+    <p class="muted" style="margin-bottom:8px">Five steps from a new client to a finished batch of scripts. Not sure where to start? Just type <span class="cmd">/run</span> and it walks you through all of it.</p>
+
+    <div class="step"><div class="num">1</div><div>
+      <h3>Onboard the client &nbsp;<span class="cmd">/snapshot</span></h3>
+      <p class="muted small">Turns onboarding notes into the client's identity doc — their voice, niche, and hard no-gos.</p></div></div>
+    <div class="step"><div class="num">2</div><div>
+      <h3>Set their audience &nbsp;<span class="cmd">/bullseye</span></h3>
+      <p class="muted small">Defines exactly who they're for and how many videos per batch aim at each ring.</p></div></div>
+    <div class="step"><div class="num">3</div><div>
+      <h3>Analyze their videos &nbsp;<span class="cmd">/analyze</span></h3>
+      <p class="muted small">Reads what's already working vs. flopping on their page. Uses Sandcastles.</p></div></div>
+    <div class="step"><div class="num">4</div><div>
+      <h3>Save a winning format &nbsp;<span class="cmd">/create-format</span> &nbsp;<span class="muted small" style="font-weight:400">optional</span></h3>
+      <p class="muted small">Banks a repeatable format so it can be reused for any client later.</p></div></div>
+    <div class="step"><div class="num">5</div><div>
+      <h3>Produce the batch &nbsp;<span class="cmd">/produce</span></h3>
+      <p class="muted small">Writes the scripts, grades the hooks, and builds the branded script doc.</p></div></div>
+
+    <div class="panel" style="padding:16px;margin-top:20px">
+      <h3 style="margin-bottom:6px">The only 3 moments it stops for you</h3>
+      <p class="muted small">1 · before spending Sandcastles credits &nbsp;·&nbsp; 2 · whether a winner becomes a saved format &nbsp;·&nbsp; 3 · approving the format split before scripts are written. Everything else runs on its own.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="screen" id="admin">
+  <div class="frame" style="padding:24px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+      <div class="wm" style="font-size:15px">SHOOT&nbsp;&amp; SCALE</div><span class="muted small">Team access</span>
+    </div>
+    <h1 style="margin-bottom:18px">Team</h1>
+
+    <div class="card" style="padding:20px;margin-bottom:20px">
+      <h2 style="margin-bottom:14px">Add a team member</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input class="field" placeholder="Name" value="Maya Ortiz">
+        <input class="field" placeholder="Email" value="maya@shootandscale.com">
+        <input class="field" placeholder="Temp password" value="setup1234">
+        <div></div>
+      </div>
+      <p class="muted small" style="margin:14px 0 8px">Assigned clients — they'll only see these</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <span class="pill active">Devin Bender</span><span class="pill">Esteban Andrade</span>
+        <span class="pill active">Priya Shah</span><span class="pill">Marcus Lee</span>
+      </div>
+      <button class="btn btn-primary" style="margin-top:16px">Add member</button>
+    </div>
+
+    <div class="card">
+      <div style="padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center">
+        <div><h3>Maya Ortiz</h3><p class="muted small">maya@shootandscale.com · active · 2 clients</p></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-ghost small" style="padding:8px 12px">Pause</button><button class="btn btn-ink small" style="padding:8px 12px">Remove</button></div>
+      </div>
+      <div style="padding:16px;display:flex;justify-content:space-between;align-items:center">
+        <div><h3>Jordan Kim</h3><p class="muted small">jordan@shootandscale.com · active · 1 client</p></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-ghost small" style="padding:8px 12px">Pause</button><button class="btn btn-ink small" style="padding:8px 12px">Remove</button></div>
+      </div>
+    </div>
+    <p class="muted small" style="margin-top:12px"><b style="font-weight:600">Pause</b> = temporarily block their login, keep the account (flip back on anytime). &nbsp; <b style="font-weight:600">Remove</b> = delete the account for good. Both end access instantly — nobody ever holds Sandcastles or Drive logins of their own.</p>
+  </div>
+</div>
+
+<script>function show(id,el){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on')}</script>
+</body></html>

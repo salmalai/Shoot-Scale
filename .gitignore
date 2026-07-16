@@ -1,0 +1,11 @@
+# Client business data and the format bank are both mirrored live in Google Drive / Supabase via
+# the web app — no need to duplicate them into git history, and these have real client PII.
+/clients/
+/format-bank/
+/_archive/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# web/ has its own .gitignore for node_modules, .next, .env, etc.

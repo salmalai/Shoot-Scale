@@ -1,0 +1,359 @@
+:root {
+  --tangerine: #ff4d12;
+  --tangerine-600: #e63e08;
+  --ink: #14110d;
+  --stone: #6b655c;
+  --ember: #fde2d8;
+  --mist: #f6f4f0;
+  --paper: #fff;
+  --line: #e9e5df;
+  --radius: 12px;
+  --f: var(--font-work-sans), system-ui, -apple-system, sans-serif;
+  --f-wm: var(--font-archivo-black), Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--f);
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--mist);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* the ONLY place the heavy display face is used: the logo lockup */
+.wm {
+  font-family: var(--f-wm);
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  display: inline-block;
+}
+
+/* headings are Work Sans 600 — clean, not shouting, not uppercase */
+h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+p {
+  margin: 0;
+}
+
+.muted {
+  color: var(--stone);
+}
+.eyebrow {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 11px;
+  color: var(--stone);
+}
+.small {
+  font-size: 13px;
+}
+
+.btn {
+  font-family: var(--f);
+  font-weight: 500;
+  font-size: 15px;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 11px 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--tangerine);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--tangerine-600);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.btn-ink {
+  background: var(--ink);
+  color: #fff;
+}
+
+.field {
+  width: 100%;
+  font-family: var(--f);
+  font-size: 15px;
+  font-weight: 400;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
+}
+select.field {
+  width: auto;
+  padding: 8px 12px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.panel {
+  background: var(--mist);
+  border-radius: var(--radius);
+}
+
+.pill {
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--mist);
+  color: var(--stone);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+.pill.active {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  padding: 14px;
+  background: var(--ink);
+}
+.tab {
+  padding: 8px 15px;
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  color: #fff;
+  opacity: 0.55;
+  text-decoration: none;
+}
+.tab.on {
+  background: var(--tangerine);
+  opacity: 1;
+}
+
+.screen {
+  max-width: 940px;
+  margin: 26px auto;
+  padding: 0 16px;
+}
+
+.frame {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 34px rgba(20, 17, 13, 0.07);
+}
+
+.hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.bubble {
+  max-width: 80%;
+  white-space: pre-wrap;
+  line-height: 1.55;
+  padding: 12px 15px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+.b-user {
+  background: var(--ink);
+  color: #fff;
+  margin-left: auto;
+}
+.b-ai {
+  background: var(--mist);
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+.typing-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.4;
+  animation: typing-bounce 1s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.chat-session-actions {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+.chat-session-row:hover .chat-session-actions {
+  opacity: 1;
+}
+.chat-session-actions button:hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+.md {
+  white-space: normal;
+}
+.md > *:first-child {
+  margin-top: 0;
+}
+.md > *:last-child {
+  margin-bottom: 0;
+}
+.md p {
+  margin: 0 0 10px;
+}
+.md ul,
+.md ol {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+.md li {
+  margin-bottom: 4px;
+}
+.md strong {
+  font-weight: 600;
+}
+.md h1,
+.md h2,
+.md h3 {
+  font-weight: 600;
+  margin: 14px 0 8px;
+  line-height: 1.3;
+}
+.md blockquote {
+  margin: 0 0 10px;
+  padding-left: 12px;
+  border-left: 3px solid var(--line);
+  color: var(--stone);
+}
+.md code {
+  background: var(--ember);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
+.md pre {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  margin: 0 0 10px;
+}
+.md pre code {
+  background: none;
+  padding: 0;
+}
+.md table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0 0 10px;
+}
+.md th,
+.md td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+}
+.md a {
+  color: var(--tangerine);
+}
+.md hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 12px 0;
+}
+
+.step {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.step:last-child {
+  border-bottom: 0;
+}
+.num {
+  flex: 0 0 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--ember);
+  color: var(--tangerine-600);
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.cmd {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 1px 7px;
+  color: var(--ink);
+}
