@@ -7,7 +7,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <TabNav showAdmin={isAdmin} showGuide={isAdmin} />
+      <TabNav showAdmin={isAdmin} showGuide />
       <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>{children}</div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth";
+import { requireMember } from "@/lib/auth";
 
 const STEPS = [
   {
@@ -35,7 +35,7 @@ const STEPS = [
 ];
 
 export default async function GuidePage() {
-  await requireAdmin();
+  await requireMember();
 
   return (
     <div className="screen">
