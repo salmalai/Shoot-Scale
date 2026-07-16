@@ -14,9 +14,15 @@ export type CurrentMember = {
 
 export const getCurrentMember = cache(async (): Promise<CurrentMember | null> => {
   const supabase = await createClient();
+  // getSession() reads the JWT already on the cookie (no network round trip) rather than getUser()
+  // (which re-checks against the Auth server every call). Safe here specifically because proxy.ts
+  // middleware already ran the network-verified getUser() check for this exact request and redirects
+  // unauthenticated requests to /login before a Server Component ever renders — this is just reading
+  // who that already-verified request belongs to, not re-establishing trust from scratch.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
 
   if (!user) return null;
 
