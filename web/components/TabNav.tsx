@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -17,11 +18,14 @@ export function TabNav({ showAdmin = true, showGuide = true }: { showAdmin?: boo
 
   return (
     <div className="tabs">
-      {tabs.map((tab) => (
-        <Link key={tab.href} href={tab.href} className={`tab${pathname.startsWith(tab.href) ? " on" : ""}`}>
-          {tab.label}
-        </Link>
-      ))}
+      <Image src="/logo.jpg" alt="Shoot & Scale" width={3961} height={2217} style={{ height: 64, width: "auto" }} priority />
+      <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 6 }}>
+        {tabs.map((tab) => (
+          <Link key={tab.href} href={tab.href} className={`tab${pathname.startsWith(tab.href) ? " on" : ""}`}>
+            {tab.label}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

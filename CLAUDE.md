@@ -68,8 +68,9 @@ not this summary.
 any skill or generator).
 
 - `Brand Pack.pdf` — the full spec: logo lockups, color, type, UI rules.
-- `logo-black-bg-orange.jpg.jpeg` — reversed lockup (white wordmark on tangerine).
-- `logo-orange-bg-white.jpg.jpeg` — accent lockup (tangerine wordmark on light).
+- `logo-black-bg-orange.jpg.jpeg` — tangerine wordmark on ink black. Used as `web/public/logo.jpg` for the
+  chat page's sidebar logo.
+- `logo-orange-bg-white.jpg.jpeg` — reversed lockup, white wordmark on tangerine.
 - `logo-pfp-orange-white.png` — profile/avatar-format mark.
 
 **Logo** — three lockups only: primary (ink on light), reversed (white on tangerine), accent
