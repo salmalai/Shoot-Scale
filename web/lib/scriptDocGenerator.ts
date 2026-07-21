@@ -243,9 +243,16 @@ export async function buildScriptDocBuffer(payload: ScriptDocPayload): Promise<B
   children.push(fixedTable([new TableRow({ children: [logoCell, legendCell] })], [4.3, 2.2]));
   children.push(spacer(2));
 
-  // Cyan header
+  // Header — big shoot label (e.g. "Shoot 2" or "Free Trial"), then client + IG (no date)
+  if (payload.shoot.trim()) {
+    children.push(
+      new Paragraph({
+        spacing: { after: spacingPt(3) },
+        children: [new TextRun({ text: payload.shoot, bold: true, size: halfPt(20) })],
+      })
+    );
+  }
   for (const [label, value] of [
-    ["Shoot Date:", payload.shoot_date],
     ["Client:", payload.client],
     ["IG:", payload.ig ?? ""],
   ]) {

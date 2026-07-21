@@ -8,7 +8,7 @@ const ScriptLineSchema = z.union([
 ]);
 
 export const ScriptDocSchema = z.object({
-  shoot_date: z.string().min(1),
+  shoot: z.string().min(1),
   client: z.string().min(1),
   ig: z.string().optional(),
   videos: z

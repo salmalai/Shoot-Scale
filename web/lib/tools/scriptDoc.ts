@@ -27,15 +27,16 @@ export async function buildAndUploadScriptDoc(
   const payload = parsed.data;
 
   const safeClientName = payload.client.replace(/[\\/:*?"<>|]/g, "");
-  const filename = `${safeClientName} - Script Doc - ${payload.shoot_date}.docx`;
+  const safeShoot = payload.shoot.replace(/[\\/:*?"<>|]/g, "");
+  const filename = `${safeClientName} - Scripts - ${safeShoot}.docx`;
 
   const localPath = await generateScriptDoc(payload, filename);
 
   try {
-    // Lands in this client's real Drive folder (clients/<Name>/scripts/), same place the repo's
-    // own scripts/ convention already puts them — not the shared-drive root.
+    // Lands in this client's real Drive folder (clients/<Name>/Content/<Shoot>/Scripts/), the exact
+    // same shoot-scoped convention the CLI's produce skill scaffolds — e.g. "Shoot 3" or "Free Trial".
     const { fileId, driveUrl, downloadUrl } = await uploadScriptDocToDrive(localPath, filename, {
-      folderPath: ["clients", clientRow.name, "scripts"],
+      folderPath: ["clients", clientRow.name, "Content", safeShoot, "Scripts"],
     });
 
     const { error } = await supabaseAdmin.from("script_docs").insert({
@@ -43,7 +44,7 @@ export async function buildAndUploadScriptDoc(
       drive_url: driveUrl,
       drive_file_id: fileId,
       filename,
-      metadata: { video_count: payload.videos.length, shoot_date: payload.shoot_date },
+      metadata: { video_count: payload.videos.length, shoot: payload.shoot },
       chat_session_id: chatSessionId,
       created_by: member.id,
     });

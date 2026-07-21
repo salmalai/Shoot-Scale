@@ -153,12 +153,12 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   {
     name: "generate_and_upload_script_doc",
     description:
-      "Build the branded Script Doc .docx for a batch of scripts and upload it to Google Drive, returning a shareable link. Only call this after the format split is approved (gate 3) and every script is written and hook-graded — this is the final step of /produce. Provide the exact data shape build_script_doc.py expects: one entry per video, script lines tagged by speaker (client=black, interviewer=red).",
+      "Build the branded Script Doc .docx for a batch of scripts and upload it to Google Drive, returning a shareable link. Only call this after the format split is approved (gate 3) and every script is written and hook-graded — this is the final step of /produce. Provide the exact data shape build_script_doc.py expects: one entry per video, script lines tagged by speaker (client=black, interviewer=red). `shoot` MUST be the exact shoot the user confirmed in Step 0 of /produce — e.g. \"Shoot 3\" or \"Free Trial\" — never invent or default it; it becomes both the doc's big header and the Drive folder it's filed under (clients/<Client>/Content/<shoot>/Scripts/), so a wrong value here misfiles the doc.",
     input_schema: {
       type: "object",
       properties: {
         client_id: { type: "string" },
-        shoot_date: { type: "string" },
+        shoot: { type: "string" },
         client: { type: "string" },
         ig: { type: "string" },
         videos: {
@@ -197,7 +197,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
           },
         },
       },
-      required: ["client_id", "shoot_date", "client", "videos"],
+      required: ["client_id", "shoot", "client", "videos"],
     },
   },
   {
