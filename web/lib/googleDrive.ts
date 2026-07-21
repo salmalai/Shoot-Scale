@@ -40,9 +40,31 @@ function getDriveClient() {
 export async function uploadScriptDocToDrive(
   localFilePath: string,
   filename: string,
-  opts?: { folderPath?: string[] }
+  opts?: { folderPath?: string[]; existingFileId?: string }
 ) {
   const drive = getDriveClient();
+  const mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+  // /revise's "one living file" rule: overwrite the SAME file (same id, same link) rather than
+  // creating a new one — matches uploadMarkdownToDrive's existingFileId branch for format bricks.
+  if (opts?.existingFileId) {
+    await drive.files.update({
+      fileId: opts.existingFileId,
+      media: { mimeType, body: fs.createReadStream(localFilePath) },
+      supportsAllDrives: true,
+    });
+    const { data } = await drive.files.get({
+      fileId: opts.existingFileId,
+      fields: "id, webViewLink, webContentLink",
+      supportsAllDrives: true,
+    });
+    return {
+      fileId: opts.existingFileId,
+      driveUrl: data.webViewLink ?? "",
+      downloadUrl: data.webContentLink ?? "",
+    };
+  }
+
   const parentId = opts?.folderPath?.length
     ? await findOrCreateFolderPath(opts.folderPath)
     : process.env.GOOGLE_DRIVE_SHARED_DRIVE_ID;
@@ -53,7 +75,7 @@ export async function uploadScriptDocToDrive(
       parents: parentId ? [parentId] : undefined,
     },
     media: {
-      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      mimeType,
       body: fs.createReadStream(localFilePath),
     },
     fields: "id",
@@ -254,6 +276,17 @@ export async function listClientFolderNames(): Promise<string[]> {
 // Reads one file's text content by id. Google Docs get exported as plain text; already-text files
 // (md/txt/json) are read directly. Binary formats (PDF, .docx, images) aren't extractable here —
 // surfaces a clear error so the model falls back to asking the user, same as the skill's own fallback.
+// Raw binary download — for file types readDriveFileContent can't return as text (e.g. the .docx
+// Script Doc itself, which /revise needs to parse for its markup/highlight colors).
+export async function downloadDriveFileBuffer(fileId: string): Promise<Buffer> {
+  const drive = getDriveClient();
+  const res = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: true },
+    { responseType: "arraybuffer" }
+  );
+  return Buffer.from(res.data as ArrayBuffer);
+}
+
 export async function readDriveFileContent(fileId: string, mimeType: string): Promise<string> {
   const drive = getDriveClient();
 

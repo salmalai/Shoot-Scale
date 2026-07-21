@@ -12,7 +12,7 @@ import {
 } from "@/lib/tools/clientDocs";
 import { readFormatBankIndex, readFormatBrick, writeFormatBrick, findFormatBySource } from "@/lib/tools/formatBank";
 import { readSandcastlesExport } from "@/lib/tools/sandcastles";
-import { buildAndUploadScriptDoc } from "@/lib/tools/scriptDoc";
+import { buildAndUploadScriptDoc, findScriptDocs, readScriptDocReview } from "@/lib/tools/scriptDoc";
 import { callSandcastlesTool } from "@/lib/sandcastlesMcp";
 
 const SKILL_NAME_LIST = SKILL_NAMES as unknown as string[];
@@ -151,13 +151,34 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "find_script_docs",
+    description:
+      "List the Script Docs on record for a client (optionally narrowed to one shoot), each with its file_id, filename, Drive link, and shoot label. This is /revise's Step 1 (\"find the doc — if there's more than one file, ask which, never guess\") and also how you get the existing file_id to pass as existing_file_id when rebuilding a doc in place.",
+    input_schema: {
+      type: "object",
+      properties: { client_id: { type: "string" }, shoot: { type: "string" } },
+      required: ["client_id"],
+    },
+  },
+  {
+    name: "read_script_doc_review",
+    description:
+      "Read a Script Doc's current state straight from its Drive bytes: per video, the verdict from the title's highlight (approved/change/reject/pending), the current topic/format/format_link/text_hook/editor_notes/script (reflecting anything the client edited themselves), and that video's comments (plus any loose/unanchored comments). This is /revise's Step 2 — the exact same extraction scripts/read_review.py does, just running in-app. Always call this immediately before acting AND immediately before rebuilding (Step 5's anti-clobber re-read), never rely on a stale copy from earlier in the conversation.",
+    input_schema: {
+      type: "object",
+      properties: { file_id: { type: "string" } },
+      required: ["file_id"],
+    },
+  },
+  {
     name: "generate_and_upload_script_doc",
     description:
-      "Build the branded Script Doc .docx for a batch of scripts and upload it to Google Drive, returning a shareable link. Only call this after the format split is approved (gate 3) and every script is written and hook-graded — this is the final step of /produce. Provide the exact data shape build_script_doc.py expects: one entry per video, script lines tagged by speaker (client=black, interviewer=red). `shoot` MUST be the exact shoot the user confirmed in Step 0 of /produce — e.g. \"Shoot 3\" or \"Free Trial\" — never invent or default it; it becomes both the doc's big header and the Drive folder it's filed under (clients/<Client>/Content/<shoot>/Scripts/), so a wrong value here misfiles the doc.",
+      "Build the branded Script Doc .docx for a batch of scripts and upload it to Google Drive, returning a shareable link. Only call this after the format split is approved (gate 3) and every script is written and hook-graded — this is the final step of /produce. Provide the exact data shape build_script_doc.py expects: one entry per video, script lines tagged by speaker (client=black, interviewer=red). `shoot` MUST be the exact shoot the user confirmed in Step 0 of /produce — e.g. \"Shoot 3\" or \"Free Trial\" — never invent or default it; it becomes both the doc's big header and the Drive folder it's filed under (clients/<Client>/Content/<shoot>/Scripts/), so a wrong value here misfiles the doc. For /revise (Step 5), pass `existing_file_id` (from find_script_docs) to overwrite that SAME file in place — same name, same link — instead of creating a new one; omit it only when this is a genuinely new batch.",
     input_schema: {
       type: "object",
       properties: {
         client_id: { type: "string" },
+        existing_file_id: { type: "string" },
         shoot: { type: "string" },
         client: { type: "string" },
         ig: { type: "string" },
@@ -277,8 +298,12 @@ export function describeToolCall(name: string, input: Record<string, unknown>): 
       return "Saving the format brick and backing it up to Drive…";
     case "read_sandcastles_export":
       return "Reading the uploaded Sandcastles export…";
+    case "find_script_docs":
+      return "Finding the client's Script Docs…";
+    case "read_script_doc_review":
+      return "Reading the marked-up Script Doc…";
     case "generate_and_upload_script_doc":
-      return "Building the Script Doc and uploading it to Drive…";
+      return input.existing_file_id ? "Rebuilding the Script Doc in place…" : "Building the Script Doc and uploading it to Drive…";
     case "list_workspaces":
       return "Listing Sandcastles workspaces…";
     case "switch_workspace":
@@ -366,8 +391,18 @@ export async function executeTool(
       });
     case "read_sandcastles_export":
       return await readSandcastlesExport(ctx.member, resolveClientId(input, ctx), input.export_id as string | undefined);
+    case "find_script_docs":
+      return await findScriptDocs(resolveClientId(input, ctx), input.shoot as string | undefined);
+    case "read_script_doc_review":
+      return await readScriptDocReview(String(input.file_id ?? ""));
     case "generate_and_upload_script_doc":
-      return await buildAndUploadScriptDoc(ctx.member, resolveClientId(input, ctx), ctx.chatSessionId, input);
+      return await buildAndUploadScriptDoc(
+        ctx.member,
+        resolveClientId(input, ctx),
+        ctx.chatSessionId,
+        input,
+        input.existing_file_id as string | undefined
+      );
     case "list_workspaces":
       return await callSandcastlesTool("list_workspaces", {});
     case "switch_workspace":
