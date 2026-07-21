@@ -539,8 +539,8 @@ export function ChatPanel() {
             <div className="bubble b-ai">
               Tell me what you&apos;d like to do — name the client if it&apos;s not obvious from
               context (e.g. &quot;produce 3 scripts for Acme&quot;). Type <span className="cmd">/</span>{" "}
-              to see every command, or just type <span className="cmd">/run</span> and I&apos;ll walk
-              you through the whole pipeline.
+              to see every command, from onboarding a new client all the way through revising a
+              batch from their feedback.
             </div>
           )}
           {items.map((item) => {

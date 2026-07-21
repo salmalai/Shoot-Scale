@@ -32,6 +32,12 @@ const STEPS = [
     title: "Produce the batch",
     body: "Writes the scripts, grades the hooks, and builds the branded script doc.",
   },
+  {
+    n: 6,
+    cmd: "/revise",
+    title: "Revise from client feedback",
+    body: "Reads the client's marked-up doc (green/yellow/red + comments) and updates the same living doc in place.",
+  },
 ];
 
 export default async function GuidePage() {
@@ -45,8 +51,9 @@ export default async function GuidePage() {
         </p>
         <h1 style={{ marginBottom: 4 }}>How the engine works</h1>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Five steps from a new client to a finished batch of scripts. Not sure where to start? Just type{" "}
-          <span className="cmd">/run</span> and it walks you through all of it.
+          Six steps from a new client to a finished, client-approved batch of scripts. Not sure where
+          to start? Just tell the chat what you want to do — name the client and it&apos;ll run the
+          right step.
         </p>
 
         {STEPS.map((step) => (
