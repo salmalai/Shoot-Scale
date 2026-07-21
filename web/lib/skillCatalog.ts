@@ -1,15 +1,10 @@
 // Plain data, no filesystem access — safe to import from client components
 // (the "/" command menu) as well as server code (system prompt building).
 
-export const SKILL_NAMES = ["run", "snapshot", "bullseye", "analyze", "create-format", "produce"] as const;
+export const SKILL_NAMES = ["snapshot", "bullseye", "analyze", "create-format", "produce", "revise"] as const;
 export type SkillName = (typeof SKILL_NAMES)[number];
 
 export const SKILL_CATALOG: { name: SkillName; command: string; description: string }[] = [
-  {
-    name: "run",
-    command: "/run",
-    description: "Guided conductor — walks the whole pipeline for this client, stopping only at the 3 real approval gates.",
-  },
   {
     name: "snapshot",
     command: "/snapshot",
@@ -34,6 +29,11 @@ export const SKILL_CATALOG: { name: SkillName; command: string; description: str
     name: "produce",
     command: "/produce",
     description: "Pitch the format split, write hook-graded scripts, and build the branded Script Doc.",
+  },
+  {
+    name: "revise",
+    command: "/revise",
+    description: "Read the client's marked-up Script Doc (green/yellow/red + comments) and update the same living doc in place.",
   },
 ];
 
