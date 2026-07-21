@@ -5,7 +5,7 @@ export default async function ChatPage() {
   await requireMember();
 
   return (
-    <div style={{ height: "100%", padding: "16px" }}>
+    <div style={{ height: "100%", padding: "12px" }}>
       <ChatPanel />
     </div>
   );

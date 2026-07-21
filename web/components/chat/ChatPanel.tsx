@@ -385,7 +385,7 @@ export function ChatPanel() {
   }
 
   return (
-    <div style={{ display: "flex", gap: 16, alignItems: "stretch", height: "100%" }}>
+    <div style={{ display: "flex", alignItems: "stretch", height: "100%" }}>
       <div
         className="card"
         style={{
@@ -395,6 +395,8 @@ export function ChatPanel() {
           display: "flex",
           flexDirection: "column",
           gap: 4,
+          borderRadius: "8px 0 0 8px",
+          borderRight: "none",
         }}
       >
         <button
@@ -502,7 +504,17 @@ export function ChatPanel() {
         </div>
       </div>
 
-      <div className="frame" style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+      <div
+        className="frame"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: preview ? 0 : "0 8px 8px 0",
+          borderRight: preview ? "none" : undefined,
+        }}
+      >
         <div className="hdr" style={{ flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div className="wm" style={{ fontSize: 15 }}>
@@ -776,7 +788,14 @@ export function ChatPanel() {
                   display: "flex",
                   flexDirection: "column",
                 }
-              : { width: 680, flexShrink: 0, display: "flex", flexDirection: "column" }
+              : {
+                  width: 680,
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: "0 8px 8px 0",
+                  borderLeft: "none",
+                }
           }
         >
           <div className="hdr" style={{ flexShrink: 0 }}>
