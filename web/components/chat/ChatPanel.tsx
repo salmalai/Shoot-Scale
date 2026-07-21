@@ -751,7 +751,7 @@ export function ChatPanel() {
       {preview && (
         <div
           className="frame"
-          style={{ width: 420, flexShrink: 0, display: "flex", flexDirection: "column" }}
+          style={{ width: 680, flexShrink: 0, display: "flex", flexDirection: "column" }}
         >
           <div className="hdr" style={{ flexShrink: 0 }}>
             <div style={{ minWidth: 0 }}>
