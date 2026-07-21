@@ -270,6 +270,25 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
       required: ["channel"],
     },
   },
+  {
+    name: "generate_insight",
+    description:
+      "Answers a natural-language question about what's working across the client's analyzed videos and watchlist — a headline, a narrative, typed sections, and video references. Use for open analytical questions (\"what's working,\" \"what should I make next,\" \"why are my educational videos outperforming\") — not for finding specific videos (search_my_videos/search_all_videos) or single-dimension rankings (top_topics/top_hooks/top_formats). No credit cost; read-only. Beta — if Sandcastles reports it's admin-only for this account, say so plainly and suggest another tool instead of retrying.",
+    input_schema: {
+      type: "object",
+      properties: { question: { type: "string" } },
+      required: ["question"],
+    },
+  },
+  {
+    name: "get_personal_analytics",
+    description:
+      "Returns the connected Sandcastles account's personal analytics dashboard — stats, charts, recent videos, an audit, and recommendations — plus up to 12 historical reports for time-travel. Omit report_uuid for the latest; pass one from a prior response's other_reports to revisit an older report. Always call fresh when asked, don't reuse a stale answer. No credit cost.",
+    input_schema: {
+      type: "object",
+      properties: { report_uuid: { type: "string" } },
+    },
+  },
 ];
 
 export function describeToolCall(name: string, input: Record<string, unknown>): string {
@@ -314,6 +333,10 @@ export function describeToolCall(name: string, input: Record<string, unknown>): 
       return "Reading the video's Sandcastles details…";
     case "channel_recap":
       return "Pulling a Sandcastles channel recap…";
+    case "generate_insight":
+      return "Asking Sandcastles for an insight…";
+    case "get_personal_analytics":
+      return "Pulling the Sandcastles analytics dashboard…";
     default:
       return `Running ${name}…`;
   }
@@ -417,6 +440,10 @@ export async function executeTool(
         limit: input.limit,
         lookback_days: input.lookback_days,
       });
+    case "generate_insight":
+      return await callSandcastlesTool("generate_insight", { question: input.question ?? "" });
+    case "get_personal_analytics":
+      return await callSandcastlesTool("get_personal_analytics", { report_uuid: input.report_uuid ?? null });
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
