@@ -52,6 +52,7 @@ export function ChatPanel() {
   const renameSettledRef = useRef(false);
   const [items, setItems] = useState<Item[]>([]);
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -175,6 +176,11 @@ export function ChatPanel() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [items, status]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreviewExpanded(false);
+  }, [preview?.fileId]);
 
   function addBubble(role: "user" | "assistant", text: string) {
     setItems((prev) => [...prev, { kind: "bubble", id: `b-${prev.length}-${Date.now()}`, role, text }]);
@@ -748,13 +754,33 @@ export function ChatPanel() {
         </div>
       </div>
 
+      {preview && previewExpanded && (
+        <div
+          onClick={() => setPreviewExpanded(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(20, 17, 13, 0.45)", zIndex: 40 }}
+        />
+      )}
+
       {preview && (
         <div
           className="frame"
-          style={{ width: 680, flexShrink: 0, display: "flex", flexDirection: "column" }}
+          style={
+            previewExpanded
+              ? {
+                  position: "fixed",
+                  top: 24,
+                  bottom: 24,
+                  right: 24,
+                  left: "18vw",
+                  zIndex: 41,
+                  display: "flex",
+                  flexDirection: "column",
+                }
+              : { width: 680, flexShrink: 0, display: "flex", flexDirection: "column" }
+          }
         >
           <div className="hdr" style={{ flexShrink: 0 }}>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
               <div
                 style={{
                   fontSize: 14,
@@ -766,26 +792,46 @@ export function ChatPanel() {
               >
                 {preview.title}
               </div>
-              <p className="muted small">Live preview · saved to Drive</p>
+              <span className="pill" style={{ cursor: "default", flexShrink: 0 }}>
+                📁 Google Drive
+              </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setPreview(null)}
-              title="Close preview"
-              style={{
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-                padding: 6,
-                borderRadius: 8,
-                lineHeight: 1,
-                fontSize: 17,
-                color: "var(--stone)",
-                flexShrink: 0,
-              }}
-            >
-              ✕
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setPreviewExpanded((v) => !v)}
+                title={previewExpanded ? "Collapse" : "Expand"}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  padding: 6,
+                  borderRadius: 8,
+                  lineHeight: 1,
+                  fontSize: 15,
+                  color: "var(--stone)",
+                }}
+              >
+                {previewExpanded ? "⤡" : "⤢"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreview(null)}
+                title="Close preview"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  padding: 6,
+                  borderRadius: 8,
+                  lineHeight: 1,
+                  fontSize: 17,
+                  color: "var(--stone)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
           <iframe
             key={preview.fileId}
