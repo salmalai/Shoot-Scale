@@ -3,7 +3,19 @@ import Anthropic from "@anthropic-ai/sdk";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CurrentMember } from "@/lib/auth";
 import { skillDescriptions } from "@/lib/skillsFs";
+import { listClientsFor } from "@/lib/tools/clientDocs";
 import { CHAT_TOOLS, describeToolCall, executeTool } from "@/lib/chatTools";
+
+// Tools whose call carries an explicit client_id — used to opportunistically tag a session with
+// the client it turned out to be about, purely for sidebar labeling (not an access boundary).
+const CLIENT_SCOPED_TOOLS = new Set([
+  "read_client_doc",
+  "write_client_doc",
+  "list_client_files",
+  "read_client_file",
+  "read_sandcastles_export",
+  "generate_and_upload_script_doc",
+]);
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
@@ -29,11 +41,16 @@ Environment notes — infrastructure context about THIS app, not part of any ski
 - For /snapshot's "look in the client's folder for onboarding docs" step: call list_client_files first, then read_client_file on whatever looks relevant (call transcripts, intake forms, notes) — only ask the user to paste something if nothing useful turns up there or a file can't be read (e.g. a PDF/.docx).
 - For /create-format Mode A (a video URL): call find_format_by_source with that exact URL BEFORE analyzing it. If it returns existing brick(s), tell the user plainly ("this video's already brick #NN — [Name]") and ask whether they want to refine/update that one (the skill's own "Updating an existing format" flow — same number/slug, overwrite in place) or are intentionally after a different read of it. Don't silently create a new, differently-named brick from a video that's already banked — that's how near-duplicate bricks pile up.
 - Never claim to call a tool that isn't in your tool list.
-- The current client is already selected for this conversation — use its client_id by default; you don't need to ask which client.
+- There's no pre-selected client for this conversation — every team member can work with every client, and one conversation can span more than one. Every client-scoped tool call (read_client_doc, write_client_doc, list_client_files, read_client_file, read_sandcastles_export, generate_and_upload_script_doc) requires an explicit client_id argument every time — there's no ambient "current client" to fall back on.
+- Resolving which client a message is about: match the client the user names (e.g. "for Acme", "/produce 3 for Acme") against the roster below, case-insensitively, allowing for obvious typos. If it clearly matches exactly one client, use that client's id. If earlier in this same conversation you already resolved a client and the user doesn't name a different one, keep using that same client_id. The shared Drive's clients/ folder is the only source of truth for which clients exist — you can never create a new one yourself, and the roster below is already synced from it fresh for this turn. If the name doesn't match any client on the roster, call list_clients once to re-check in case a folder was just added, and if it still doesn't match, tell the user plainly that this client doesn't exist in the shared Drive yet (a "clients/Name/" folder needs to be created there first) and ask them to confirm the exact name rather than guessing or proceeding on the wrong client.
 - When the user explicitly invokes a skill with its input already given (e.g. "/create-format <url>", a pasted custom-format idea, a named client), that invocation IS the go-ahead. Run the skill's steps end-to-end in the same turn — draft, optimize, visualize, whatever it calls for — and present the finished result. Do not pause mid-skill to ask "want me to go ahead and build this?" or similar. Only stop for: (1) the 2 named pipeline gates above, or (2) a step where the skill's own text says to stop and ask THE USER something only they can answer (e.g. which of several ambiguous options they mean). A skill's language about "pitching" or "approving" a candidate before building refers to the engine surfacing options on its own initiative (e.g. multiple format candidates found during /analyze) — it does not apply when the user already explicitly requested this exact run themselves.
 `.trim();
 
-function buildSystemPrompt(clientId: string, clientName: string): string {
+function buildSystemPrompt(clients: { id: string; name: string }[]): string {
+  const roster = clients.length
+    ? clients.map((c) => `- ${c.name} — client_id: ${c.id}`).join("\n")
+    : "(none yet — no clients/<Name>/ folders found in the shared Drive)";
+
   return `${HOUSE_RULES}
 
 Skills available (call load_skill to read one in full before following its steps):
@@ -41,7 +58,8 @@ ${skillDescriptions()}
 
 ${ENVIRONMENT_NOTE}
 
-Current client: ${clientName} (client_id: ${clientId})`;
+Clients (name — client_id):
+${roster}`;
 }
 
 // Silent insert failures are how history gets corrupted: a turn renders fine from the in-memory
@@ -104,30 +122,34 @@ function repairOrphanedToolUse(messages: Anthropic.MessageParam[]) {
 export type ChatEvent =
   | { type: "status"; text: string }
   | { type: "text"; text: string }
-  | { type: "script_doc"; driveUrl: string; downloadUrl?: string; filename: string; videoCount: number }
-  | { type: "format_brick"; number: number; name: string; driveUrl: string }
+  | { type: "script_doc"; driveUrl: string; downloadUrl?: string; fileId: string; filename: string; videoCount: number }
+  | { type: "format_brick"; number: number; name: string; driveUrl: string; fileId: string }
   | { type: "error"; message: string }
   | { type: "done" };
 
 export async function runChatTurn({
   member,
-  clientId,
   sessionId,
   userText,
   onEvent,
 }: {
   member: CurrentMember;
-  clientId: string;
   sessionId: string;
   userText: string;
   onEvent: (event: ChatEvent) => void;
 }): Promise<void> {
-  const { data: client, error: clientError } = await supabaseAdmin
-    .from("clients")
-    .select("id, name")
-    .eq("id", clientId)
-    .single();
-  if (clientError || !client) throw new Error("Client not found.");
+  const { data: session } = await supabaseAdmin
+    .from("chat_sessions")
+    .select("id, client_id")
+    .eq("id", sessionId)
+    .maybeSingle();
+  if (!session) throw new Error("Chat session not found.");
+
+  // Best-effort — once a tool call in this turn resolves a client, tagged onto the session below for
+  // sidebar labeling and as this turn's fallback client_id. Not an access boundary.
+  let sessionClientId = session.client_id as string | null;
+
+  const clients = await listClientsFor();
 
   const { data: priorRows } = await supabaseAdmin
     .from("chat_messages")
@@ -145,7 +167,7 @@ export async function runChatTurn({
   messages.push({ role: "user", content: userBlock });
   await persistMessage(sessionId, "user", userBlock);
 
-  const system = buildSystemPrompt(client.id, client.name);
+  const system = buildSystemPrompt(clients);
   let toolCallCount = 0;
   let continuationCount = 0;
 
@@ -208,25 +230,37 @@ export async function runChatTurn({
       try {
         const result = await executeTool(toolUse.name, input, {
           member,
-          clientId: client.id,
+          clientId: sessionClientId ?? undefined,
           chatSessionId: sessionId,
         });
         toolResults.push({ type: "tool_result", tool_use_id: toolUse.id, content: JSON.stringify(result) });
 
+        if (!sessionClientId && CLIENT_SCOPED_TOOLS.has(toolUse.name) && typeof input.client_id === "string") {
+          sessionClientId = input.client_id;
+          await supabaseAdmin.from("chat_sessions").update({ client_id: sessionClientId }).eq("id", sessionId);
+        }
+
         if (toolUse.name === "generate_and_upload_script_doc") {
-          const r = result as { drive_url: string; download_url?: string; filename: string; video_count: number };
+          const r = result as {
+            drive_url: string;
+            download_url?: string;
+            file_id: string;
+            filename: string;
+            video_count: number;
+          };
           onEvent({
             type: "script_doc",
             driveUrl: r.drive_url,
             downloadUrl: r.download_url,
+            fileId: r.file_id,
             filename: r.filename,
             videoCount: r.video_count,
           });
         }
 
         if (toolUse.name === "write_format_brick") {
-          const r = result as { number: number; name: string; drive_url: string };
-          onEvent({ type: "format_brick", number: r.number, name: r.name, driveUrl: r.drive_url });
+          const r = result as { number: number; name: string; drive_url: string; file_id: string };
+          onEvent({ type: "format_brick", number: r.number, name: r.name, driveUrl: r.drive_url, fileId: r.file_id });
         }
       } catch (err) {
         toolResults.push({

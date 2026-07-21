@@ -1,13 +1,10 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CurrentMember } from "@/lib/auth";
-import { assertClientAccess } from "./clientDocs";
 
 export const SANDCASTLES_BUCKET = "sandcastles-exports";
 
 export async function storeSandcastlesExport(member: CurrentMember, clientId: string, file: File) {
-  await assertClientAccess(member, clientId);
-
   const text = await file.text();
   let parsed: unknown;
   try {
@@ -39,8 +36,6 @@ export async function storeSandcastlesExport(member: CurrentMember, clientId: st
 }
 
 export async function readSandcastlesExport(member: CurrentMember, clientId: string, exportId?: string) {
-  await assertClientAccess(member, clientId);
-
   const baseQuery = supabaseAdmin
     .from("sandcastles_exports")
     .select("id, storage_path, video_count, uploaded_at")

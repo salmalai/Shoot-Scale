@@ -1,6 +1,6 @@
 ---
 name: bullseye
-description: Derive a client's Audience Bullseye — their exact ICP in the center with 4 progressively broader rings around it — and the content-mix ratio that says how many videos per batch aim at each ring. Use when the user says "/bullseye", "build the bullseye for [client]", "what's [client]'s content mix", "how niche should [client] go", or when the /run conductor calls it. Reads the Snapshot and auto-derives the rings (it does NOT run a 15-question interview) — it drafts, you correct, one approval. Writes ONE doc, the Bullseye, which /analyze and /produce both read.
+description: Derive a client's Audience Bullseye — their exact ICP at the center with 4 broader rings around it — and the content-mix ratio for how many videos per batch aim at each ring. Use for /bullseye, "build the bullseye for [client]", "what's [client]'s content mix", or "how niche should [client] go". Reads the Snapshot and auto-derives the rings (no interview): it drafts, you correct, one approval. Writes ONE doc that /analyze and /produce read.
 ---
 
 # Bullseye
@@ -17,8 +17,9 @@ Core principle: **aim smaller to grow bigger.** Broad content confuses the algor
 content teaches it exactly who the core viewer is, and *then* it expands reach on its own.
 
 ## Where it lives
-`clients/<Client Name>/Bullseye.md`. Reads `clients/<Client Name>/Snapshot.md`. Never rewrites the
-Snapshot. Keep exactly one; overwrite in place, bump the changelog.
+`clients/<Client Name>/Strategy/Bullseye.md`. Reads `Strategy/Snapshot.md` (fall back to the client
+root for older clients). Never rewrites the Snapshot. Keep exactly one; overwrite in place, bump the
+changelog.
 
 ## Step 0 — Load the client
 Read the Snapshot. Pull the **niche/offer**, the **ICP** (who actually pays), the **audience
@@ -62,5 +63,4 @@ rule, the topic-sourcing rule, and a Changelog starting at v1. Stamp it a living
 
 ## Hand-off
 "Bullseye's set — this is what /analyze and /produce use to keep the batch on-niche and balanced.
-Want me to analyze their videos now?" When `/run` called this, return control to it. Keep talk
-plain — don't expose file paths unless asked.
+Want me to analyze their videos now?" Keep talk plain — don't expose file paths unless asked.

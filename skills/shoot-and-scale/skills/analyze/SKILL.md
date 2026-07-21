@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: Deep-read a client's OWN videos and turn them into a living Content Analysis doc — what's working vs. flopping, by FORMAT and by TOPIC — then surface any repeatable format candidates from their winners, with links, for the user to approve into the Format Bank. Use when the user says "/analyze", "analyze [client]", "what's working for [client]", "deep dive [client]'s channel", or when the /run conductor calls it. Runs on Sandcastles. ALWAYS switch into the client's Sandcastles workspace first, then read a JSON EXPORT the user bulk-analyzes in the web app (the MCP read path is unreliable and charges credits). Competitor analysis is NOT part of this skill — that's manual and out of the workflow.
+description: Deep-read a client's OWN videos into a living Content Analysis doc — what's working vs. flopping, by format and topic — and surface repeatable format candidates from their winners for approval into the Format Bank. Use for /analyze, "analyze [client]", "what's working for [client]", or "deep dive [client]'s channel". Runs on Sandcastles: switch into the client's workspace first, then read a JSON export. Competitor analysis is out of scope.
 ---
 
 # Analyze
@@ -18,8 +18,9 @@ footage — cut it into a clear read.
 wants a competitor read, that's a manual job outside this workflow.
 
 ## Where it lives
-`clients/<Client Name>/Content-Analysis.md`. Reads `Snapshot.md` (voice/no-gos + the pinned
-**Sandcastles workspace + channel UUID**) and `Bullseye.md` (rings/ratio). The Format Bank
+`clients/<Client Name>/Strategy/Content-Analysis.md`. Reads `Strategy/Snapshot.md` (voice/no-gos + the
+pinned **Sandcastles workspace + channel UUID**) and `Strategy/Bullseye.md` (rings/ratio) — fall back
+to the client root for older clients. The Format Bank
 (`format-bank/`) is global. Refer to Sandcastles tools by plain names (`list_workspaces`,
 `switch_workspace`, `channel_recap`) — never hardcode a server prefix. The deep read comes from a
 **JSON export**, NOT from per-video tool calls.
@@ -99,5 +100,5 @@ stale.
 
 ## Hand-off
 "Analysis is current — we now know what's working and what to avoid for them. Want me to produce a
-batch?" (that's `/produce`). When `/run` called this, return control to it. A format worth banking →
-route to `/create-format`. Keep talk plain — don't expose file paths unless asked.
+batch?" (that's `/produce`). A format worth banking → route to `/create-format`. Keep talk plain —
+don't expose file paths unless asked.

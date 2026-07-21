@@ -6,12 +6,21 @@ import remarkGfm from "remark-gfm";
 import { logout } from "@/app/(app)/actions";
 import { SKILL_CATALOG } from "@/lib/skillCatalog";
 
-type ClientOption = { id: string; name: string };
 type SessionOption = { id: string; title: string | null; created_at: string; updated_at: string };
 type Item =
   | { kind: "bubble"; id: string; role: "user" | "assistant"; text: string }
-  | { kind: "card"; id: string; filename: string; videoCount: number; driveUrl: string; downloadUrl?: string }
-  | { kind: "format_card"; id: string; number: number; name: string; driveUrl: string };
+  | {
+      kind: "card";
+      id: string;
+      filename: string;
+      videoCount: number;
+      driveUrl: string;
+      downloadUrl?: string;
+      fileId?: string;
+    }
+  | { kind: "format_card"; id: string; number: number; name: string; driveUrl: string; fileId?: string };
+
+type Preview = { fileId: string; title: string; driveUrl: string; downloadUrl?: string };
 
 function extractText(content: unknown): string {
   if (!Array.isArray(content)) return "";
@@ -32,8 +41,7 @@ function timeAgo(iso: string): string {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
-export function ChatPanel({ clients }: { clients: ClientOption[] }) {
-  const [clientId, setClientId] = useState<string>(clients[0]?.id ?? "");
+export function ChatPanel() {
   const [sessions, setSessions] = useState<SessionOption[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -43,6 +51,7 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
   // saves. Set to true the instant Enter/Escape acts, so the resulting blur-triggered call is a no-op.
   const renameSettledRef = useRef(false);
   const [items, setItems] = useState<Item[]>([]);
+  const [preview, setPreview] = useState<Preview | null>(null);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -71,6 +80,7 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
   async function loadSessionMessages(id: string) {
     setLoadingHistory(true);
     setItems([]);
+    setPreview(null);
     try {
       const res = await fetch(`/api/chat?sessionId=${id}`);
       const data = await res.json();
@@ -122,6 +132,7 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
                 number: result.number as number,
                 name: result.name as string,
                 driveUrl: result.drive_url as string,
+                fileId: result.file_id as string | undefined,
               });
             } else {
               loaded.push({
@@ -131,6 +142,7 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
                 videoCount: result.video_count as number,
                 driveUrl: result.drive_url as string,
                 downloadUrl: result.download_url as string | undefined,
+                fileId: result.file_id as string | undefined,
               });
             }
           }
@@ -142,8 +154,8 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
     }
   }
 
-  async function refreshSessions(clientIdToLoad: string, selectId?: string) {
-    const res = await fetch(`/api/chat/sessions?clientId=${clientIdToLoad}`);
+  async function refreshSessions(selectId?: string) {
+    const res = await fetch("/api/chat/sessions");
     const data = await res.json();
     const list: SessionOption[] = data.sessions ?? [];
     setSessions(list);
@@ -155,11 +167,10 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
   }
 
   useEffect(() => {
-    if (!clientId) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    refreshSessions(clientId);
+    refreshSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clientId]);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
@@ -170,19 +181,16 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
   }
 
   async function newChat() {
-    if (!clientId || creatingChat) return;
+    if (creatingChat) return;
     setCreatingChat(true);
     try {
-      const res = await fetch("/api/chat/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId }),
-      });
+      const res = await fetch("/api/chat/sessions", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.session) return;
       setSessions((prev) => [data.session, ...prev]);
       setSessionId(data.session.id);
       setItems([]);
+      setPreview(null);
       inputRef.current?.focus();
     } finally {
       setCreatingChat(false);
@@ -245,11 +253,13 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file || !clientId) return;
+    if (!file) return;
+    const clientName = window.prompt("Which client is this Sandcastles export for?")?.trim();
+    if (!clientName) return;
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("clientId", clientId);
+      formData.append("clientName", clientName);
       formData.append("file", file);
       const res = await fetch("/api/sandcastles-export", { method: "POST", body: formData });
       const data = await res.json();
@@ -264,15 +274,11 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
 
   async function send() {
     const text = input.trim();
-    if (!text || sending || !clientId) return;
+    if (!text || sending) return;
 
     let activeSessionId = sessionId;
     if (!activeSessionId) {
-      const res = await fetch("/api/chat/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId }),
-      });
+      const res = await fetch("/api/chat/sessions", { method: "POST" });
       const data = await res.json();
       if (!res.ok || !data.session) {
         addBubble("assistant", `⚠️ ${data?.error ?? "Couldn't start a chat session."}`);
@@ -292,7 +298,7 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, sessionId: activeSessionId, message: text }),
+        body: JSON.stringify({ sessionId: activeSessionId, message: text }),
       });
 
       if (!res.ok || !res.body) {
@@ -326,8 +332,15 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
                 videoCount: event.videoCount,
                 driveUrl: event.driveUrl,
                 downloadUrl: event.downloadUrl,
+                fileId: event.fileId,
               },
             ]);
+            setPreview({
+              fileId: event.fileId,
+              title: event.filename,
+              driveUrl: event.driveUrl,
+              downloadUrl: event.downloadUrl,
+            });
           } else if (event.type === "format_brick") {
             setItems((prev) => [
               ...prev,
@@ -337,15 +350,21 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
                 number: event.number,
                 name: event.name,
                 driveUrl: event.driveUrl,
+                fileId: event.fileId,
               },
             ]);
+            setPreview({
+              fileId: event.fileId,
+              title: `Format #${event.number} — ${event.name}`,
+              driveUrl: event.driveUrl,
+            });
           } else if (event.type === "error") throw new Error(event.message);
         }
       }
 
       if (finalText) addBubble("assistant", finalText);
       // Sync the sidebar (new title from the first message, updated_at ordering) without a full reload.
-      fetch(`/api/chat/sessions?clientId=${clientId}`)
+      fetch("/api/chat/sessions")
         .then((r) => r.json())
         .then((data) => {
           if (Array.isArray(data.sessions)) setSessions(data.sessions);
@@ -376,12 +395,12 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
           className="btn btn-primary small"
           style={{ marginBottom: 8, padding: "9px 12px" }}
           onClick={newChat}
-          disabled={!clientId || creatingChat}
+          disabled={creatingChat}
         >
           {creatingChat ? "Creating…" : "+ New chat"}
         </button>
         <div style={{ overflowY: "auto", flex: 1 }}>
-          {sessions.length === 0 && <p className="muted small" style={{ padding: "8px 6px" }}>No chats yet for this client.</p>}
+          {sessions.length === 0 && <p className="muted small" style={{ padding: "8px 6px" }}>No chats yet.</p>}
           {sessions.map((s) => (
             <div
               key={s.id}
@@ -486,20 +505,6 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
             <span className="muted small">Content engine</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="muted small">Client</span>
-            <select
-              className="field"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              disabled={clients.length === 0}
-            >
-              {clients.length === 0 && <option>No clients assigned yet</option>}
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
             <form action={logout}>
               <button className="btn btn-ghost small" style={{ padding: "8px 12px" }} type="submit">
                 Sign out
@@ -514,9 +519,10 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
           {loadingHistory && <p className="muted small">Loading…</p>}
           {!loadingHistory && items.length === 0 && (
             <div className="bubble b-ai">
-              Pick a client above, then tell me what you&apos;d like to do — type{" "}
-              <span className="cmd">/</span> to see every command, or just type{" "}
-              <span className="cmd">/run</span> and I&apos;ll walk you through the whole pipeline.
+              Tell me what you&apos;d like to do — name the client if it&apos;s not obvious from
+              context (e.g. &quot;produce 3 scripts for Acme&quot;). Type <span className="cmd">/</span>{" "}
+              to see every command, or just type <span className="cmd">/run</span> and I&apos;ll walk
+              you through the whole pipeline.
             </div>
           )}
           {items.map((item) => {
@@ -552,15 +558,29 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
                     </h3>
                     <p className="muted small">Saved to the Format Bank · backed up to Drive</p>
                   </div>
-                  <a
-                    className="btn btn-primary small"
-                    style={{ padding: "9px 14px" }}
-                    href={item.driveUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open in Drive
-                  </a>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {item.fileId && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost small"
+                        style={{ padding: "9px 14px" }}
+                        onClick={() =>
+                          setPreview({ fileId: item.fileId!, title: `Format #${item.number} — ${item.name}`, driveUrl: item.driveUrl })
+                        }
+                      >
+                        View
+                      </button>
+                    )}
+                    <a
+                      className="btn btn-primary small"
+                      style={{ padding: "9px 14px" }}
+                      href={item.driveUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open in Drive
+                    </a>
+                  </div>
                 </div>
               );
             }
@@ -583,6 +603,23 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
+                  {item.fileId && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost small"
+                      style={{ padding: "9px 14px" }}
+                      onClick={() =>
+                        setPreview({
+                          fileId: item.fileId!,
+                          title: item.filename,
+                          driveUrl: item.driveUrl,
+                          downloadUrl: item.downloadUrl,
+                        })
+                      }
+                    >
+                      View
+                    </button>
+                  )}
                   {item.downloadUrl && (
                     <a
                       className="btn btn-ghost small"
@@ -677,7 +714,7 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
             type="button"
             title="Upload a Sandcastles JSON export"
             onClick={() => fileInputRef.current?.click()}
-            disabled={!clientId || uploading}
+            disabled={uploading}
           >
             {uploading ? "Uploading…" : "Upload export"}
           </button>
@@ -699,17 +736,95 @@ export function ChatPanel({ clients }: { clients: ClientOption[] }) {
               }
             }}
             onBlur={() => setCommandMenuOpen(false)}
-            disabled={!clientId || sending || creatingChat}
+            disabled={sending || creatingChat}
           />
           <button
             className="btn btn-primary"
             onClick={send}
-            disabled={!clientId || sending || creatingChat || !input.trim()}
+            disabled={sending || creatingChat || !input.trim()}
           >
             {sending ? "Sending…" : "Send"}
           </button>
         </div>
       </div>
+
+      {preview && (
+        <div
+          className="frame"
+          style={{ width: 420, flexShrink: 0, display: "flex", flexDirection: "column" }}
+        >
+          <div className="hdr" style={{ flexShrink: 0 }}>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {preview.title}
+              </div>
+              <p className="muted small">Live preview · saved to Drive</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreview(null)}
+              title="Close preview"
+              style={{
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
+                padding: 6,
+                borderRadius: 8,
+                lineHeight: 1,
+                fontSize: 17,
+                color: "var(--stone)",
+                flexShrink: 0,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          <iframe
+            key={preview.fileId}
+            src={`https://drive.google.com/file/d/${preview.fileId}/preview`}
+            style={{ flex: 1, border: "none" }}
+            allow="autoplay"
+          />
+          <div
+            style={{
+              flexShrink: 0,
+              borderTop: "1px solid var(--line)",
+              padding: 12,
+              display: "flex",
+              gap: 8,
+            }}
+          >
+            {preview.downloadUrl && (
+              <a
+                className="btn btn-ghost small"
+                style={{ padding: "9px 14px", flex: 1, justifyContent: "center" }}
+                href={preview.downloadUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download
+              </a>
+            )}
+            <a
+              className="btn btn-primary small"
+              style={{ padding: "9px 14px", flex: 1, justifyContent: "center" }}
+              href={preview.driveUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open in Drive
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

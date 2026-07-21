@@ -43,7 +43,8 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "list_clients",
-    description: "List the clients visible to the current user.",
+    description:
+      "List every client in the system (every team member can work with every client). This re-syncs from the shared Drive's clients/ folder first, so a folder someone just added there will show up here even if it hasn't been referenced in chat before.",
     input_schema: { type: "object", properties: {} },
   },
   {
@@ -142,10 +143,11 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   {
     name: "read_sandcastles_export",
     description:
-      "Read the most recently uploaded Sandcastles JSON export for the current client (or a specific export_id). This is the substitute for live Sandcastles video-performance calls in this app. Returns found:false if none has been uploaded yet.",
+      "Read the most recently uploaded Sandcastles JSON export for a client (or a specific export_id). This is the substitute for live Sandcastles video-performance calls in this app. Returns found:false if none has been uploaded yet.",
     input_schema: {
       type: "object",
-      properties: { export_id: { type: "string" } },
+      properties: { client_id: { type: "string" }, export_id: { type: "string" } },
+      required: ["client_id"],
     },
   },
   {
@@ -155,6 +157,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     input_schema: {
       type: "object",
       properties: {
+        client_id: { type: "string" },
         shoot_date: { type: "string" },
         client: { type: "string" },
         ig: { type: "string" },
@@ -194,7 +197,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
           },
         },
       },
-      required: ["shoot_date", "client", "videos"],
+      required: ["client_id", "shoot_date", "client", "videos"],
     },
   },
   {
@@ -255,7 +258,7 @@ export function describeToolCall(name: string, input: Record<string, unknown>): 
     case "read_skill_file":
       return `Reading ${input.path}…`;
     case "list_clients":
-      return "Checking which clients you can see…";
+      return "Checking the client list…";
     case "read_client_doc":
       return `Reading ${input.doc_type}…`;
     case "write_client_doc":
@@ -291,10 +294,20 @@ export function describeToolCall(name: string, input: Record<string, unknown>): 
   }
 }
 
+// Every client-scoped tool call must name its client explicitly (via input.client_id) — there's no
+// dropdown-selected "current client" anymore, since one conversation can span several clients.
+function resolveClientId(input: Record<string, unknown>, ctx: { clientId?: string }): string {
+  const clientId = (input.client_id as string | undefined) || ctx.clientId;
+  if (!clientId) {
+    throw new Error("client_id is required — call list_clients first to resolve which client this is for.");
+  }
+  return clientId;
+}
+
 export async function executeTool(
   name: string,
   input: Record<string, unknown>,
-  ctx: { member: CurrentMember; clientId: string; chatSessionId: string }
+  ctx: { member: CurrentMember; clientId?: string; chatSessionId: string }
 ): Promise<unknown> {
   switch (name) {
     case "load_skill": {
@@ -308,13 +321,13 @@ export async function executeTool(
       return { content: readSkillFile(skillName, String(input.path ?? "")) };
     }
     case "list_clients":
-      return { clients: await listClientsFor(ctx.member) };
+      return { clients: await listClientsFor() };
     case "read_client_doc":
-      return await readClientDoc(ctx.member, String(input.client_id || ctx.clientId), input.doc_type as DocType);
+      return await readClientDoc(ctx.member, resolveClientId(input, ctx), input.doc_type as DocType);
     case "write_client_doc": {
       const result = await writeClientDoc(
         ctx.member,
-        String(input.client_id || ctx.clientId),
+        resolveClientId(input, ctx),
         input.doc_type as DocType,
         String(input.content ?? ""),
         {
@@ -329,9 +342,9 @@ export async function executeTool(
       return { ok: true, ...result };
     }
     case "list_client_files":
-      return await listClientFolderFiles(ctx.member, String(input.client_id || ctx.clientId));
+      return await listClientFolderFiles(ctx.member, resolveClientId(input, ctx));
     case "read_client_file":
-      return await readClientFolderFile(ctx.member, String(input.client_id || ctx.clientId), String(input.filename ?? ""));
+      return await readClientFolderFile(ctx.member, resolveClientId(input, ctx), String(input.filename ?? ""));
     case "read_format_bank_index":
       return { content: await readFormatBankIndex() };
     case "find_format_by_source":
@@ -352,9 +365,9 @@ export async function executeTool(
         content: String(input.content ?? ""),
       });
     case "read_sandcastles_export":
-      return await readSandcastlesExport(ctx.member, ctx.clientId, input.export_id as string | undefined);
+      return await readSandcastlesExport(ctx.member, resolveClientId(input, ctx), input.export_id as string | undefined);
     case "generate_and_upload_script_doc":
-      return await buildAndUploadScriptDoc(ctx.member, ctx.clientId, ctx.chatSessionId, input);
+      return await buildAndUploadScriptDoc(ctx.member, resolveClientId(input, ctx), ctx.chatSessionId, input);
     case "list_workspaces":
       return await callSandcastlesTool("list_workspaces", {});
     case "switch_workspace":

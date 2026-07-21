@@ -161,5 +161,5 @@ export async function writeFormatBrick(
     .eq("number", number);
   if (driveError) throw new Error(driveError.message);
 
-  return { number, name: input.name, drive_url: driveUrl };
+  return { number, name: input.name, drive_url: driveUrl, file_id: fileId };
 }

@@ -13,17 +13,10 @@ export default async function AdminPage({
   await requireAdmin();
   const { sandcastles: sandcastlesResult } = await searchParams;
 
-  const [{ data: clients }, { data: members }, { data: assignments }, sandcastlesStatus] = await Promise.all([
-    supabaseAdmin.from("clients").select("id, name").order("name"),
+  const [{ data: members }, sandcastlesStatus] = await Promise.all([
     supabaseAdmin.from("team_members").select("id, name, email, role, status").order("created_at"),
-    supabaseAdmin.from("client_assignments").select("team_member_id, client_id"),
     getConnectionStatus(),
   ]);
-
-  const countByMember = new Map<string, number>();
-  (assignments ?? []).forEach((a) => {
-    countByMember.set(a.team_member_id, (countByMember.get(a.team_member_id) ?? 0) + 1);
-  });
 
   const roster = (members ?? []).filter((m) => m.role === "team");
 
@@ -65,7 +58,7 @@ export default async function AdminPage({
 
         <div className="card" style={{ padding: 20, marginBottom: 20 }}>
           <h2 style={{ marginBottom: 14 }}>Add a team member</h2>
-          <AddMemberForm clients={clients ?? []} />
+          <AddMemberForm />
         </div>
 
         <div className="card">
@@ -75,7 +68,6 @@ export default async function AdminPage({
             </div>
           )}
           {roster.map((member, i) => {
-            const count = countByMember.get(member.id) ?? 0;
             return (
               <div
                 key={member.id}
@@ -90,7 +82,7 @@ export default async function AdminPage({
                 <div>
                   <h3>{member.name}</h3>
                   <p className="muted small">
-                    {member.email} · {member.status} · {count} client{count === 1 ? "" : "s"}
+                    {member.email} · {member.status}
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>

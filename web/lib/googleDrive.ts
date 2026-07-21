@@ -224,6 +224,33 @@ export async function listFilesInDriveFolder(
   return files;
 }
 
+// The shared Drive's clients/ folder is the source of truth for which clients exist — lists its
+// immediate subfolder names (one per real client) so the app can mirror them into the database
+// without ever inventing a client that has no Drive folder behind it. Read-only; creates nothing.
+export async function listClientFolderNames(): Promise<string[]> {
+  const folderId = await findFolderPath(["clients"]);
+  if (!folderId) return [];
+
+  const drive = getDriveClient();
+  const names: string[] = [];
+  let pageToken: string | undefined;
+  do {
+    const { data } = await drive.files.list({
+      q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      fields: "nextPageToken, files(name)",
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+      pageToken,
+    });
+    for (const f of data.files ?? []) {
+      if (f.name) names.push(f.name);
+    }
+    pageToken = data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return names;
+}
+
 // Reads one file's text content by id. Google Docs get exported as plain text; already-text files
 // (md/txt/json) are read directly. Binary formats (PDF, .docx, images) aren't extractable here —
 // surfaces a clear error so the model falls back to asking the user, same as the skill's own fallback.

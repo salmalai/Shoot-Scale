@@ -1,7 +1,7 @@
 {
   "name": "shoot-and-scale-content-system",
-  "version": "4.1.0",
-  "description": "Shoot & Scale's content engine, rebuilt linear. Six skills: run (the guided conductor), snapshot, bullseye, analyze (deep-reads the client's OWN videos into a living Content Analysis doc + surfaces format candidates), create-format (bank a reusable format), and produce (pitch the format split, write hook-graded scripts, and build the branded doc in one). Topics never gate; formats are bank-only; competitor analysis is out of the workflow. Runs on Sandcastles.",
+  "version": "4.3.0",
+  "description": "Shoot & Scale's content engine. Six skills: snapshot (client identity), bullseye (niche + content-mix), analyze (living Content Analysis from the client's own videos), create-format (bank a reusable format), produce (confirm the shoot, pitch the format split, write hook-graded scripts, build the branded doc), and revise (turn the client's green/yellow/red markup + comments into the next version of the same living doc, and learn from it). Formats are bank-only; runs on Sandcastles.",
   "author": {
     "name": "Shoot & Scale"
   },
@@ -9,14 +9,14 @@
     "short-form",
     "video",
     "content",
-    "run",
     "snapshot",
     "bullseye",
     "analyze",
     "format",
     "produce",
+    "revise",
+    "shoot",
     "scripts",
-    "hooks",
     "sandcastles",
     "client"
   ]

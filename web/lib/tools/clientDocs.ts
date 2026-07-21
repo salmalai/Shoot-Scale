@@ -5,6 +5,7 @@ import {
   uploadMarkdownToDrive,
   readMarkdownFromDrive,
   listFilesInDriveFolder,
+  listClientFolderNames,
   readDriveFileContent,
 } from "@/lib/googleDrive";
 
@@ -14,40 +15,32 @@ const DOC_FILENAMES: Record<DocType, string> = {
   content_analysis: "Content-Analysis.md",
 };
 
-export async function listClientsFor(member: CurrentMember) {
-  if (member.role === "admin") {
-    const { data, error } = await supabaseAdmin.from("clients").select("id, name").order("name");
-    if (error) throw new Error(error.message);
-    return data ?? [];
+// Every active team member can see and act on every client — access is gated by being an active
+// member at all (requireMember), not by a per-client assignment. The shared Drive's clients/ folder
+// is the source of truth for which clients exist: mirror any folder found there into the `clients`
+// table (upsert by name, skipping existing rows so their other fields aren't clobbered), then return
+// the full synced roster. This never invents a client that has no Drive folder behind it.
+export async function listClientsFor() {
+  const driveNames = await listClientFolderNames();
+  if (driveNames.length) {
+    const { error: syncError } = await supabaseAdmin
+      .from("clients")
+      .upsert(
+        driveNames.map((name) => ({ name })),
+        { onConflict: "name", ignoreDuplicates: true }
+      );
+    if (syncError) throw new Error(syncError.message);
   }
-  const { data, error } = await supabaseAdmin
-    .from("client_assignments")
-    .select("clients(id, name)")
-    .eq("team_member_id", member.id);
-  if (error) throw new Error(error.message);
-  return (data ?? [])
-    .map((r) => r.clients as unknown as { id: string; name: string } | null)
-    .filter((c): c is { id: string; name: string } => Boolean(c))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
 
-export async function assertClientAccess(member: CurrentMember, clientId: string) {
-  if (member.role === "admin") return;
-  const { data, error } = await supabaseAdmin
-    .from("client_assignments")
-    .select("client_id")
-    .eq("team_member_id", member.id)
-    .eq("client_id", clientId)
-    .maybeSingle();
+  const { data, error } = await supabaseAdmin.from("clients").select("id, name").order("name");
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("You don't have access to this client.");
+  return data ?? [];
 }
 
 export const DOC_TYPES = ["snapshot", "bullseye", "content_analysis"] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
 export async function readClientDoc(member: CurrentMember, clientId: string, docType: DocType) {
-  await assertClientAccess(member, clientId);
   const { data, error } = await supabaseAdmin
     .from("client_documents")
     .select("content, version, updated_at")
@@ -85,8 +78,7 @@ export async function readClientDoc(member: CurrentMember, clientId: string, doc
 
 // Everything sitting in this client's Drive folder, minus the 3 known living docs — the pool of
 // onboarding material /snapshot's Step 1 asks the model to "look for" instead of asking the user to paste.
-export async function listClientFolderFiles(member: CurrentMember, clientId: string) {
-  await assertClientAccess(member, clientId);
+export async function listClientFolderFiles(_member: CurrentMember, clientId: string) {
   const { data: clientRow } = await supabaseAdmin.from("clients").select("name").eq("id", clientId).single();
   if (!clientRow) return { files: [] as { name: string; mimeType: string }[] };
 
@@ -99,8 +91,7 @@ export async function listClientFolderFiles(member: CurrentMember, clientId: str
   };
 }
 
-export async function readClientFolderFile(member: CurrentMember, clientId: string, filename: string) {
-  await assertClientAccess(member, clientId);
+export async function readClientFolderFile(_member: CurrentMember, clientId: string, filename: string) {
   const { data: clientRow } = await supabaseAdmin.from("clients").select("name").eq("id", clientId).single();
   // Matches listClientFolderFiles' handling of the same condition (a stale/invalid clientId) —
   // both report "not found" gracefully rather than one throwing and the sibling reporting empty.
@@ -130,8 +121,6 @@ export async function writeClientDoc(
   content: string,
   sandcastlesFields?: SandcastlesFields
 ) {
-  await assertClientAccess(member, clientId);
-
   const { data: clientRow, error: clientLookupError } = await supabaseAdmin
     .from("clients")
     .select("name")

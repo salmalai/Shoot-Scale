@@ -10,7 +10,6 @@ export async function addMember(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const clientIds = formData.getAll("clientIds").map(String);
 
   if (!name || !email || !password) {
     throw new Error("Name, email, and temp password are required.");
@@ -37,12 +36,6 @@ export async function addMember(formData: FormData) {
   if (memberError) {
     await supabaseAdmin.auth.admin.deleteUser(created.user.id);
     throw new Error(memberError.message);
-  }
-
-  if (clientIds.length) {
-    const rows = clientIds.map((clientId) => ({ team_member_id: created.user.id, client_id: clientId }));
-    const { error: assignError } = await supabaseAdmin.from("client_assignments").insert(rows);
-    if (assignError) throw new Error(assignError.message);
   }
 
   revalidatePath("/admin");

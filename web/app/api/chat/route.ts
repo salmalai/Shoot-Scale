@@ -2,7 +2,6 @@ export const runtime = "nodejs";
 
 import { requireMember } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { assertClientAccess } from "@/lib/tools/clientDocs";
 import { runChatTurn, type ChatEvent } from "@/lib/chatEngine";
 
 function titleFromMessage(message: string): string {
@@ -13,25 +12,17 @@ function titleFromMessage(message: string): string {
 export async function POST(request: Request) {
   const member = await requireMember();
   const body = await request.json().catch(() => null);
-  const clientId = String(body?.clientId ?? "");
   const sessionId = String(body?.sessionId ?? "");
   const message = String(body?.message ?? "");
 
-  if (!clientId || !sessionId || !message.trim()) {
-    return Response.json({ error: "clientId, sessionId, and message are required." }, { status: 400 });
-  }
-
-  try {
-    await assertClientAccess(member, clientId);
-  } catch (err) {
-    return Response.json({ error: err instanceof Error ? err.message : "Access denied." }, { status: 403 });
+  if (!sessionId || !message.trim()) {
+    return Response.json({ error: "sessionId and message are required." }, { status: 400 });
   }
 
   const { data: session } = await supabaseAdmin
     .from("chat_sessions")
     .select("id, title")
     .eq("id", sessionId)
-    .eq("client_id", clientId)
     .eq("team_member_id", member.id)
     .maybeSingle();
   if (!session) {
@@ -43,7 +34,7 @@ export async function POST(request: Request) {
     async start(controller) {
       const send = (event: ChatEvent) => controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
       try {
-        await runChatTurn({ member, clientId, sessionId, userText: message, onEvent: send });
+        await runChatTurn({ member, sessionId, userText: message, onEvent: send });
         // Only bump title/updated_at once the turn actually succeeded — doing this beforehand left a
         // "ghost" session (a real title, sorted to the top of the sidebar) with zero saved messages
         // whenever the turn failed before anything was persisted.

@@ -3,7 +3,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import type { CurrentMember } from "@/lib/auth";
-import { assertClientAccess } from "./clientDocs";
 import { generateScriptDoc } from "@/lib/scriptDoc";
 import { uploadScriptDocToDrive } from "@/lib/googleDrive";
 import { ScriptDocSchema } from "@/lib/scriptDocSchema";
@@ -14,8 +13,6 @@ export async function buildAndUploadScriptDoc(
   chatSessionId: string,
   rawPayload: unknown
 ) {
-  await assertClientAccess(member, clientId);
-
   const { data: clientRow, error: clientLookupError } = await supabaseAdmin
     .from("clients")
     .select("name")
@@ -55,6 +52,7 @@ export async function buildAndUploadScriptDoc(
     return {
       drive_url: driveUrl,
       download_url: downloadUrl,
+      file_id: fileId,
       filename,
       video_count: payload.videos.length,
     };

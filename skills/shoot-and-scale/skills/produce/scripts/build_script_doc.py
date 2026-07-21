@@ -5,7 +5,7 @@ Usage:  python build_script_doc.py <data.json> <output.docx>
 
 data.json schema:
 {
-  "shoot_date": "Friday, June 12th 2026",
+  "shoot": "Shoot 2",
   "client": "Devin Bender",
   "ig": "https://www.instagram.com/devbender/",
   "videos": [
@@ -97,8 +97,13 @@ def build(data, out_path):
     for p in rcell.paragraphs: p.paragraph_format.space_after=Pt(1); p.paragraph_format.space_before=Pt(1)
     spacer(2)
 
-    # Cyan header
-    for lab,val in (("Shoot Date:",data.get("shoot_date","")),("Client:",data.get("client","")),("IG:",data.get("ig",""))):
+    # Header — big shoot number, then client + IG (no date)
+    shoot=str(data.get("shoot","")).strip()
+    if shoot:
+        sp=doc.add_paragraph(); sp.paragraph_format.space_after=Pt(3)
+        sr=sp.add_run(shoot); sr.bold=True; sr.font.size=Pt(20)
+    for lab,val in (("Client:",data.get("client","")),("IG:",data.get("ig",""))):
+        if not str(val).strip(): continue
         p=doc.add_paragraph(); p.paragraph_format.space_after=Pt(0)
         r=p.add_run((lab+" "+val).strip()); r.bold=True; r.font.size=Pt(13); r.font.highlight_color=WD_COLOR_INDEX.TURQUOISE
     spacer(6)
@@ -119,11 +124,12 @@ def build(data, out_path):
             if color is not None: r.font.color.rgb=color
             if hl is not None: r.font.highlight_color=hl
         return p
-    iline([("Each video starts ",False,None),("pending",True,None),(" (no highlight). Read it and tweak the wording so it sounds like something ",False,None),("you'd",True,None),(" actually say. Then ",False,None),("highlight the Video title",True,None),(" to tell us your call:",False,None)])
-    iline([("● ",False,None),("Approved",True,BLACK,WD_COLOR_INDEX.BRIGHT_GREEN),("  — happy with the format, topic, and script.",False,None)],bullet=True)
-    iline([("● ",False,None),("Remix",True,BLACK,WD_COLOR_INDEX.YELLOW),("  — like part of it; want us to change something (e.g. keep the format, new topic). Tell us in a comment.",False,None)],bullet=True)
-    iline([("● ",False,None),("Reject",True,BLACK,WD_COLOR_INDEX.RED),("  — scrap it; we'll bring a brand-new idea.",False,None)],bullet=True)
-    iline([("To request a change or leave any note, highlight the text and click the ",False,None),("comment button",True,None),(" (shown below).",False,None)],sa=4)
+    iline([("Read each script. If you want to change any wording, ",False,None),("just edit it right here in the doc",True,None),(" — you don't have to ask us first. Then ",False,None),("highlight the video title",True,None),(" to tell us your call:",False,None)])
+    iline([("● ",False,None),("Approved",True,BLACK,WD_COLOR_INDEX.BRIGHT_GREEN),("  — good to shoot. Any edits you made are final.",False,None)],bullet=True)
+    iline([("● ",False,None),("Change it",True,BLACK,WD_COLOR_INDEX.YELLOW),("  — you like the idea but want something different (new topic, different angle, or a new spin). Tell us what in a comment and we'll rewrite it.",False,None)],bullet=True)
+    iline([("● ",False,None),("Not this one",True,BLACK,WD_COLOR_INDEX.RED),("  — a no. Tell us why in a comment (and if you have a different idea, drop it there too), so we learn what to avoid.",False,None)],bullet=True)
+    iline([("To leave a note, highlight the text and click the ",False,None),("comment button",True,None),(" (shown below).",False,None)],sa=4)
+    iline([("Please edit this Word file right here in Drive",True,RED),(" — do ",False,None),("not",True,None),(" convert it to a Google Doc or make a copy. Keeping it as one file is what lets us send your revised version back to this same link.",False,None)],sa=4)
     imgp=ib.add_paragraph(); imgp.paragraph_format.space_after=Pt(4); imgp.add_run().add_picture(COMMENT,width=Inches(2.9))
 
     # field/box helpers
@@ -174,9 +180,11 @@ def build(data, out_path):
         vp=doc.add_paragraph(); vp.paragraph_format.page_break_before=True
         vp.paragraph_format.space_before=Pt(2); vp.paragraph_format.space_after=Pt(6)
         vr=vp.add_run(f"Video {i}"); vr.bold=True; vr.font.size=Pt(16)
+        if str(v.get("verdict","")).lower()=="approved":
+            vr.font.highlight_color=WD_COLOR_INDEX.BRIGHT_GREEN  # keep client-approved videos green
         fields_grid(v.get("topic",""), v.get("format",""), v.get("format_link"), v.get("text_hook",""))
         spacer(4)
-        boxed_section("EDITOR NOTES", text=(v.get("editor_notes") or None), blank=2)
+        boxed_section("EDITOR NOTES  —  for the editor: what to shoot / how to cut (not spoken)", text=(v.get("editor_notes") or None), blank=2)
         spacer(4)
         boxed_section("SCRIPT", lines=(v.get("script") or None), blank=6)
 
