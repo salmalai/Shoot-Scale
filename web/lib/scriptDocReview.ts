@@ -14,11 +14,13 @@ export type ReviewScriptLine =
 
 export type ReviewVideo = {
   verdict: ReviewVerdict;
+  backup: boolean;
   topic: string;
   format: string;
   format_link: string;
   text_hook: string;
   editor_notes: string;
+  shot_status: string;
   script: ReviewScriptLine[];
   comments: { text: string }[];
 };
@@ -29,6 +31,7 @@ export type ScriptDocReview = {
   ig: string;
   videos: ReviewVideo[];
   loose_comments: { text: string }[];
+  videography_notes: string;
 };
 
 const VERDICT: Record<string, ReviewVerdict> = { green: "approved", yellow: "change", red: "reject" };
@@ -117,6 +120,7 @@ export async function parseScriptDocReview(fileBuffer: Buffer): Promise<ScriptDo
   const header = { client: "", ig: "", shoot: "" };
   const videos: ReviewVideo[] = [];
   const looseComments: { text: string }[] = [];
+  let videographyNotes = "";
   let cur: ReviewVideo | null = null;
 
   const attachComments = (container: Element) => {
@@ -132,7 +136,7 @@ export async function parseScriptDocReview(fileBuffer: Buffer): Promise<ScriptDo
 
     if (child.name === "w:p") {
       const txt = collectText(child).trim();
-      const videoMatch = /^Video\s+(\d+)$/.exec(txt);
+      const videoMatch = /^(Video|Backup)\s+(\d+)$/.exec(txt);
       if (videoMatch) {
         let verdict: ReviewVerdict = "pending";
         for (const r of directChildren(child, "w:r")) {
@@ -142,7 +146,18 @@ export async function parseScriptDocReview(fileBuffer: Buffer): Promise<ScriptDo
             break;
           }
         }
-        cur = { verdict, topic: "", format: "", format_link: "", text_hook: "", editor_notes: "", script: [], comments: [] };
+        cur = {
+          verdict,
+          backup: videoMatch[1] === "Backup",
+          topic: "",
+          format: "",
+          format_link: "",
+          text_hook: "",
+          editor_notes: "",
+          shot_status: "",
+          script: [],
+          comments: [],
+        };
         videos.push(cur);
       } else if (txt.startsWith("Client:") && !header.client) {
         header.client = txt.slice("Client:".length).trim();
@@ -158,11 +173,26 @@ export async function parseScriptDocReview(fileBuffer: Buffer): Promise<ScriptDo
     } else if (child.name === "w:tbl") {
       const rows = directChildren(child, "w:tr");
       if (!rows.length) continue;
-      attachComments(child);
-      if (!cur) continue;
 
       const cellsOf = (row: Element) => directChildren(row, "w:tc");
       const firstRowLabel = collectText(cellsOf(rows[0])[0]).trim().toUpperCase();
+
+      // The per-video SHOT STATUS box (videographer writes, in their own words, what happened).
+      if (firstRowLabel.startsWith("SHOT STATUS")) {
+        const bodyCell = rows[1] ? cellsOf(rows[1])[0] : undefined;
+        if (cur && bodyCell) cur.shot_status = collectText(bodyCell).trim();
+        continue;
+      }
+      // The shoot-phase Videography Notes box (day recap) -> top-level field.
+      if (firstRowLabel.startsWith("RECAP OF THE DAY") || firstRowLabel.startsWith("VIDEOGRAPHY NOTES")) {
+        const bodyCell = rows[1] ? cellsOf(rows[1])[0] : undefined;
+        if (bodyCell) videographyNotes = collectText(bodyCell).trim();
+        continue;
+      }
+
+      attachComments(child);
+      if (!cur) continue;
+
       const labels = rows.map((r) => collectText(cellsOf(r)[0]).trim().toUpperCase());
 
       if (labels.includes("TOPIC")) {
@@ -209,5 +239,12 @@ export async function parseScriptDocReview(fileBuffer: Buffer): Promise<ScriptDo
     }
   }
 
-  return { shoot: header.shoot, client: header.client, ig: header.ig, videos, loose_comments: looseComments };
+  return {
+    shoot: header.shoot,
+    client: header.client,
+    ig: header.ig,
+    videos,
+    loose_comments: looseComments,
+    videography_notes: videographyNotes,
+  };
 }

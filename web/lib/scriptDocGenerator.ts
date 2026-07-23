@@ -39,6 +39,7 @@ const BLACK = "000000";
 const LABEL_GRAY = "333333";
 const LABEL_FILL = "EDEDED";
 const NOTE_FILL = "F4F7FB";
+const STATUS_FILL = "FFF6E5";
 const BORDER_COLOR = "C7C7C7";
 const LINK_BLUE = "0563C1";
 
@@ -167,8 +168,11 @@ function scriptLineParagraph(item: ScriptLine) {
   });
 }
 
-function boxedSection(title: string, opts: { text?: string | null; lines?: ScriptLine[] | null; blank?: number }) {
-  const { text, lines, blank = 2 } = opts;
+function boxedSection(
+  title: string,
+  opts: { text?: string | null; lines?: ScriptLine[] | null; blank?: number; fill?: string }
+) {
+  const { text, lines, blank = 2, fill = NOTE_FILL } = opts;
 
   const headerCell = new TableCell({
     width: { size: twip(6.5), type: WidthType.DXA },
@@ -193,6 +197,7 @@ function boxedSection(title: string, opts: { text?: string | null; lines?: Scrip
 
   const bodyCell = new TableCell({
     width: { size: twip(6.5), type: WidthType.DXA },
+    shading: shade(fill),
     borders: cellBorders(),
     children: bodyChildren,
   });
@@ -330,6 +335,17 @@ export async function buildScriptDocBuffer(payload: ScriptDocPayload): Promise<B
         ],
         { spaceAfter: 4 }
       ),
+      instructionLine(
+        [
+          { text: "Videographer:", bold: true },
+          { text: " after the shoot, jot what happened in each video's " },
+          { text: "SHOT STATUS", bold: true },
+          { text: " box (in your own words) and the " },
+          { text: "Videography Notes", bold: true },
+          { text: " box at the end. No highlighting needed." },
+        ],
+        { spaceAfter: 4 }
+      ),
       new Paragraph({
         spacing: { after: spacingPt(4) },
         children: [new ImageRun({ type: "png", data: COMMENT_HELP, transformation: commentSize })],
@@ -343,13 +359,56 @@ export async function buildScriptDocBuffer(payload: ScriptDocPayload): Promise<B
     )
   );
 
-  // One video per page
-  payload.videos.forEach((video, index) => {
+  // One video per page (mains first, then a BACKUP SCRIPTS section)
+  let mainN = 0;
+  let backupN = 0;
+  let backupStarted = false;
+  for (const video of payload.videos) {
+    const isBackup = Boolean(video.backup);
+    const firstBackup = isBackup && !backupStarted;
+    if (firstBackup) {
+      backupStarted = true;
+      children.push(
+        new Paragraph({
+          pageBreakBefore: true,
+          spacing: { after: spacingPt(2) },
+          children: [new TextRun({ text: "BACKUP SCRIPTS", bold: true, size: halfPt(18) })],
+        })
+      );
+      children.push(
+        new Paragraph({
+          spacing: { after: spacingPt(8) },
+          children: [
+            new TextRun({
+              text: "Spares — swap one in if a main can't be shot. Approved like the rest.",
+              size: halfPt(10),
+              color: LABEL_GRAY,
+            }),
+          ],
+        })
+      );
+    }
+
+    let label: string;
+    if (isBackup) {
+      backupN += 1;
+      label = `Backup ${backupN}`;
+    } else {
+      mainN += 1;
+      label = `Video ${mainN}`;
+    }
+
+    const titleRun = new TextRun({
+      text: label,
+      bold: true,
+      size: halfPt(16),
+      highlight: video.verdict?.toLowerCase() === "approved" ? HighlightColor.GREEN : undefined,
+    });
     children.push(
       new Paragraph({
-        pageBreakBefore: true,
+        pageBreakBefore: !firstBackup,
         spacing: { before: spacingPt(2), after: spacingPt(6) },
-        children: [new TextRun({ text: `Video ${index + 1}`, bold: true, size: halfPt(16) })],
+        children: [titleRun],
       })
     );
     children.push(fieldsGrid(video.topic, video.format, video.format_link, video.text_hook));
@@ -357,7 +416,30 @@ export async function buildScriptDocBuffer(payload: ScriptDocPayload): Promise<B
     children.push(boxedSection("EDITOR NOTES", { text: video.editor_notes || null, blank: 2 }));
     children.push(spacer(4));
     children.push(boxedSection("SCRIPT", { lines: video.script ?? null, blank: 6 }));
-  });
+    children.push(spacer(4));
+    children.push(
+      boxedSection(
+        "SHOT STATUS  —  videographer: after the shoot, note what happened in your own words (shot it / redo next time / skipped + why)",
+        { text: video.shot_status || null, blank: 2, fill: STATUS_FILL }
+      )
+    );
+  }
+
+  // A general recap box the videographer can fill at the end of the day
+  children.push(
+    new Paragraph({
+      pageBreakBefore: true,
+      spacing: { before: spacingPt(2), after: spacingPt(6) },
+      children: [new TextRun({ text: "Videography Notes", bold: true, size: halfPt(16) })],
+    })
+  );
+  children.push(
+    boxedSection("VIDEOGRAPHY NOTES  —  overall recap of the shoot day (what got dropped or changed, and why)", {
+      text: payload.videography_notes || null,
+      blank: 8,
+      fill: STATUS_FILL,
+    })
+  );
 
   const doc = new Document({
     styles: {

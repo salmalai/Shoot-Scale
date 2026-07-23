@@ -1,6 +1,6 @@
 ---
 name: snapshot
-description: Create or update a client's identity Snapshot — who they are, their voice, branding, and what they want from their content — from onboarding materials. Use for /snapshot, "snapshot [client]", "onboard [client]", "new client [name]", or an onboarding transcript, intake form, or notes. Builds ONLY the identity doc; it does not analyze videos (/analyze) or plan content (/produce).
+description: Create or update a client's identity Snapshot — who they are, their voice, branding, and what they want from their content — from onboarding materials AND their website. Use for /snapshot, "snapshot [client]", "refresh [client]'s snapshot", or an onboarding transcript, intake form, or notes. (Full new-client setup — folders + all the docs — is /onboarding, which calls this.) Builds ONLY the identity doc; it does not analyze videos (/analyze) or plan content (/produce).
 ---
 
 # Snapshot
@@ -10,7 +10,8 @@ branding, background, and what they want out of their content. This is one of th
 client docs (`Snapshot`, `Bullseye`, `Content-Analysis`) that every other skill reads. It is
 **fact, not strategy** — no format buckets, no lineup, no rank tables live here.
 
-Run this on every new client. It's the first thing that happens when a client comes on.
+Run this on every new client — usually via `/onboarding`, which calls it as its identity step — or
+standalone to refresh a client's identity.
 
 ## Where it lives
 `clients/<Client Name>/Strategy/Snapshot.md` (proper-case folder, e.g.
@@ -20,15 +21,25 @@ one; overwrite in place on a real identity change (not every month).
 
 ## What feeds it
 Anything from onboarding — the more the better: the **onboarding call transcript**, intake forms,
-questionnaires, emails, notes, the client's own words anywhere. If you can't find any, ask the user
-to point you to it or paste it. **Don't invent an identity from nothing.**
+questionnaires, emails, notes, the client's own words anywhere — **plus the client's website**, which
+is almost always the richest single source of who they are, what they offer, and how they talk. If you
+can't find any onboarding material, ask the user to point you to it or paste it, and still pull the
+website. **Don't invent an identity from nothing** — but a website alone is a legitimate starting point
+when there was no formal onboarding (flag what's inferred).
 
 Treat unconfirmed call notes as *ideas the client was open to*, not confirmed wants. Flag
 provenance: ✅ = grounded fact, ⚠️ = inferred / open to confirm.
 
 ## Steps
-1. **Gather the materials.** Look in `clients/<Client Name>/Onboarding/` (and the client root) for
-   onboarding docs; read them. Pull in anything pasted or emailed.
+1. **Gather the materials — including the website.** Look in `clients/<Client Name>/Onboarding/` (and
+   the client root) for onboarding docs; read them. Pull in anything pasted or emailed. Then **find and
+   read the client's website:**
+   - Look for the URL in the onboarding docs / intake form first.
+   - If it isn't there, **search the web** for the client + business name and identify their official
+     site, then **fetch and read it** (about page, services/offer, bio, taglines, tone).
+   - Mine it for Basic Info, the offer, positioning, audience, and voice cues. Treat clear on-site
+     facts as ✅; treat your reading of their tone/personality as ⚠️ unless the onboarding confirms it.
+   - If you genuinely can't find a site, say so and proceed on the other materials.
 2. **Confirm-current beat (re-run).** If a Snapshot already exists, review it with the user and
    resolve its open ⚠️ flags BEFORE anything builds on it. Don't trust it just because the file is
    there. Ask: "Did anything change in their onboarding — any new files to fold in?"
@@ -51,8 +62,10 @@ provenance: ✅ = grounded fact, ⚠️ = inferred / open to confirm.
    - **Still to confirm** — identity gaps to nail down later (⚠️).
 5. **Seed the memory file.** If `clients/<Client Name>/Strategy/Client-Memory.md` doesn't exist yet,
    create a stub with three empty, dated headers: `## Learned no-gos`, `## Voice & style
-   preferences`, `## Topic likes / dislikes`. `/revise` fills it from client feedback over time and
-   `/produce` reads it as inviolable. Don't put identity facts here — those live in the Snapshot.
+   preferences`, `## Topic likes / dislikes`. (`/onboarding` also seeds this — both are
+   create-if-missing, so whichever runs first wins and the other is a no-op.) `/revise` and `/produce`'s
+   post-shoot reconciliation fill it from client/videographer feedback over time and `/produce` reads it
+   as inviolable. Don't put identity facts here — those live in the Snapshot.
 6. **Report** plainly: snapshot's done, and the one or two things still worth confirming.
 
 ## What this skill does NOT do

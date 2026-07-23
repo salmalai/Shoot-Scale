@@ -163,7 +163,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   {
     name: "read_script_doc_review",
     description:
-      "Read a Script Doc's current state straight from its Drive bytes: per video, the verdict from the title's highlight (approved/change/reject/pending), the current topic/format/format_link/text_hook/editor_notes/script (reflecting anything the client edited themselves), and that video's comments (plus any loose/unanchored comments). This is /revise's Step 2 — the exact same extraction scripts/read_review.py does, just running in-app. Always call this immediately before acting AND immediately before rebuilding (Step 5's anti-clobber re-read), never rely on a stale copy from earlier in the conversation.",
+      "Read a Script Doc's current state straight from its Drive bytes: per video, the verdict from the title's highlight (approved/change/reject/pending), whether it's a backup (filed under BACKUP SCRIPTS), the current topic/format/format_link/text_hook/editor_notes/script (reflecting anything the client edited themselves), the videographer's shot_status note, and that video's comments (plus any loose/unanchored comments and the doc-level videography_notes recap). This is /revise's Step 2 — the exact same extraction scripts/read_review.py does, just running in-app. Always call this immediately before acting AND immediately before rebuilding (Step 5's anti-clobber re-read), never rely on a stale copy from earlier in the conversation.",
     input_schema: {
       type: "object",
       properties: { file_id: { type: "string" } },
@@ -173,7 +173,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
   {
     name: "generate_and_upload_script_doc",
     description:
-      "Build the branded Script Doc .docx for a batch of scripts and upload it to Google Drive, returning a shareable link. Only call this after the format split is approved (gate 3) and every script is written and hook-graded — this is the final step of /produce. Provide the exact data shape build_script_doc.py expects: one entry per video, script lines tagged by speaker (client=black, interviewer=red). `shoot` MUST be the exact shoot the user confirmed in Step 0 of /produce — e.g. \"Shoot 3\" or \"Free Trial\" — never invent or default it; it becomes both the doc's big header and the Drive folder it's filed under (clients/<Client>/Content/<shoot>/Scripts/), so a wrong value here misfiles the doc. For /revise (Step 5), pass `existing_file_id` (from find_script_docs) to overwrite that SAME file in place — same name, same link — instead of creating a new one; omit it only when this is a genuinely new batch.",
+      "Build the branded Script Doc .docx for a batch of scripts and upload it to Google Drive, returning a shareable link. Only call this after the format split is approved (gate 3) and every script is written and hook-graded — this is the final step of /produce. Provide the exact data shape build_script_doc.py expects: one entry per video, script lines tagged by speaker (client=black, interviewer=red). `shoot` MUST be the exact shoot the user confirmed in Step 0 of /produce — e.g. \"Shoot 3\" or \"Free Trial\" — never invent or default it; it becomes both the doc's big header and the Drive folder it's filed under (clients/<Client>/Content/<shoot>/Scripts/), so a wrong value here misfiles the doc. For /revise (Step 5), pass `existing_file_id` (from find_script_docs) to overwrite that SAME file in place — same name, same link — instead of creating a new one; omit it only when this is a genuinely new batch. Each video gets a SHOT STATUS box (leave `shot_status` blank when producing — that's the videographer's field, filled after the shoot) and a doc-level `videography_notes` recap box (also leave blank when producing). Set `backup: true` on any video that should file under the BACKUP SCRIPTS section instead of the main numbered list. Set `verdict: \"approved\"` to keep a video's title highlighted green (e.g. when /revise rebuilds and a video wasn't touched).",
     input_schema: {
       type: "object",
       properties: {
@@ -182,6 +182,7 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
         shoot: { type: "string" },
         client: { type: "string" },
         ig: { type: "string" },
+        videography_notes: { type: "string" },
         videos: {
           type: "array",
           items: {
@@ -192,6 +193,9 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
               format_link: { type: "string" },
               text_hook: { type: "string" },
               editor_notes: { type: "string" },
+              shot_status: { type: "string" },
+              backup: { type: "boolean" },
+              verdict: { type: "string" },
               script: {
                 type: "array",
                 items: {

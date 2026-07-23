@@ -52,14 +52,32 @@ Encode the two zones:
   topics drift the client broad. `/produce` pulls topics from here + the client's own winners.
 - **CRAFT (formats, hooks, pacing) comes from anywhere.**
 
+## Step 4b — Derive the Content Territory (the client's signature lens)
+The rings tell `/produce` WHAT a client can talk about; the **Content Territory** tells it HOW this
+client owns it, so two clients in the same niche never sound alike — and so a generic niche topic that
+several clients must cover comes out different for each. This is the layer that makes `/produce`'s
+cross-client no-repeat rule actually *work* instead of just blocking. Derive two things from the
+Snapshot (and Content-Analysis if it exists):
+- **Signature lens** — the one angle only this client can take: their personal story, their proof,
+  their POV, their format DNA. (E.g. Emas Law Group owns *games*; Mariela Cano owns *mentorship &
+  students*.) One or two sentences.
+- **Owned angle pillars** — 3–5 recurring doors this client walks generic niche topics through
+  (their own cases, their city, their clientele, their pet peeves, their origin story). When a generic
+  topic must be covered by more than one client in the niche, each client comes at it through their
+  OWN pillars — that's what makes the scripts diverge instead of colliding.
+Draft these; the user corrects them at the gate. `/produce` reads this section to source every script
+fill (its rule 5) and to keep this client's voice distinct from the rest of the roster.
+
 ## Step 5 — Present for approval (the ONE gate)
-Show the Center Statement, the 5-level ladder (one line per ring naming the constraint relaxed), and
-the mix ratio. Ask them to confirm or correct the center and the ladder — the only decision here. If
-artifacts are available, optionally render a concentric-ring visual; never block on it.
+Show the Center Statement, the 5-level ladder (one line per ring naming the constraint relaxed), the
+mix ratio, and the **Content Territory** (signature lens + owned pillars). Ask them to confirm or
+correct the center, the ladder, and the territory — the only decision here. If artifacts are
+available, optionally render a concentric-ring visual; never block on it.
 
 ## Step 6 — Write the doc
 Write `Bullseye.md`: the Center Statement, the ladder table, the content-mix ratio + calibration
-rule, the topic-sourcing rule, and a Changelog starting at v1. Stamp it a living doc.
+rule, the topic-sourcing rule, the **Content Territory** (signature lens + owned angle pillars), and
+a Changelog starting at v1. Stamp it a living doc.
 
 ## Hand-off
 "Bullseye's set — this is what /analyze and /produce use to keep the batch on-niche and balanced.

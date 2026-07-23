@@ -3,6 +3,11 @@
 Shoot & Scale — Script Doc builder.
 Usage:  python build_script_doc.py <data.json> <output.docx>
 
+ONE unchanging document. The client reviews by highlighting the video title
+(green/yellow/red); the videographer, after the shoot, writes in each video's SHOT STATUS box
+in their own words. The doc never changes shape between those two — it always has, per video:
+TOPIC/FORMAT/TEXT HOOK, EDITOR NOTES, SCRIPT, and SHOT STATUS. A Videography Notes box sits at the end.
+
 data.json schema:
 {
   "shoot": "Shoot 2",
@@ -15,6 +20,9 @@ data.json schema:
       "format_link": "https://...",          # optional; renders as a 'HERE' hyperlink
       "text_hook": "....",                    # optional
       "editor_notes": "....",                 # optional; usually blank
+      "shot_status": "....",                  # optional; usually blank — the videographer fills it
+      "backup": false,                        # optional; true => rendered under the BACKUP SCRIPTS section
+      "verdict": "approved",                  # optional: approved => client-approved title stays green
       "script": [                              # optional; list of bullet items
         {"who": "client", "t": "..."},        # who: client (black) | interviewer (red)
         {"runs": [                             # OR mixed colors on one bullet
@@ -40,7 +48,7 @@ LOGO = os.path.join(ASSETS, "logo.png")
 COMMENT = os.path.join(ASSETS, "comment_help.png")
 
 RED=RGBColor(0xFF,0,0); BLACK=RGBColor(0,0,0); LABELGRAY=RGBColor(0x33,0x33,0x33)
-LABEL_FILL="EDEDED"; NOTE_FILL="F4F7FB"; BORDER="C7C7C7"; LINKBLUE="0563C1"
+LABEL_FILL="EDEDED"; NOTE_FILL="F4F7FB"; STATUS_FILL="FFF6E5"; BORDER="C7C7C7"; LINKBLUE="0563C1"
 
 def shade(cell,hexc):
     tcPr=cell._tc.get_or_add_tcPr(); shd=OxmlElement('w:shd')
@@ -87,7 +95,7 @@ def build(data, out_path):
     def spacer(pts=6):
         p=doc.add_paragraph(); p.paragraph_format.space_after=Pt(pts); p.paragraph_format.space_before=Pt(0); return p
 
-    # TOP: logo + legend
+    # TOP: logo + legend (script speaker colors)
     top=doc.add_table(rows=1,cols=2); lcell,rcell=top.rows[0].cells; set_w(lcell,4.3); set_w(rcell,2.2); fix_table(top,[4.3,2.2])
     lcell.paragraphs[0].add_run().add_picture(LOGO,width=Inches(2.0))
     borders(rcell); shade(rcell,"FFFFFF")
@@ -108,7 +116,7 @@ def build(data, out_path):
         r=p.add_run((lab+" "+val).strip()); r.bold=True; r.font.size=Pt(13); r.font.highlight_color=WD_COLOR_INDEX.TURQUOISE
     spacer(6)
 
-    # Instructions box
+    # Instructions box (client review). One line at the end points the videographer to SHOT STATUS.
     itbl=doc.add_table(rows=2,cols=1); ih=itbl.rows[0].cells[0]; ib=itbl.rows[1].cells[0]; set_w(ih,6.5); set_w(ib,6.5); fix_table(itbl,[6.5])
     shade(ih,LABEL_FILL); borders(ih)
     hp=ih.paragraphs[0]; hp.paragraph_format.space_after=Pt(2); hp.paragraph_format.space_before=Pt(2)
@@ -130,6 +138,7 @@ def build(data, out_path):
     iline([("● ",False,None),("Not this one",True,BLACK,WD_COLOR_INDEX.RED),("  — a no. Tell us why in a comment (and if you have a different idea, drop it there too), so we learn what to avoid.",False,None)],bullet=True)
     iline([("To leave a note, highlight the text and click the ",False,None),("comment button",True,None),(" (shown below).",False,None)],sa=4)
     iline([("Please edit this Word file right here in Drive",True,RED),(" — do ",False,None),("not",True,None),(" convert it to a Google Doc or make a copy. Keeping it as one file is what lets us send your revised version back to this same link.",False,None)],sa=4)
+    iline([("Videographer:",True,None),(" after the shoot, jot what happened in each video's ",False,None),("SHOT STATUS",True,None),(" box (in your own words) and the ",False,None),("Videography Notes",True,None),(" box at the end. No highlighting needed.",False,None)],sa=4)
     imgp=ib.add_paragraph(); imgp.paragraph_format.space_after=Pt(4); imgp.add_run().add_picture(COMMENT,width=Inches(2.9))
 
     # field/box helpers
@@ -148,12 +157,14 @@ def build(data, out_path):
                 add_hyperlink(vp, link, "HERE")
         fix_table(tbl,[1.25,5.25])
 
-    def boxed_section(title, text=None, lines=None, blank=2):
+    def boxed_section(title, text=None, lines=None, blank=2, fill=NOTE_FILL):
         tbl=doc.add_table(rows=2,cols=1); hc=tbl.rows[0].cells[0]; bc=tbl.rows[1].cells[0]; set_w(hc,6.5); set_w(bc,6.5)
         shade(hc,LABEL_FILL); borders(hc)
         hp=hc.paragraphs[0]; hp.paragraph_format.space_after=Pt(2); hp.paragraph_format.space_before=Pt(2)
         hr=hp.add_run(title); hr.bold=True; hr.font.size=Pt(9.5); hr.font.color.rgb=LABELGRAY
-        borders(bc); bc.paragraphs[0].paragraph_format.space_after=Pt(3)
+        borders(bc)
+        if fill: shade(bc,fill)
+        bc.paragraphs[0].paragraph_format.space_after=Pt(3)
         if lines:
             first=True
             for item in lines:
@@ -175,11 +186,26 @@ def build(data, out_path):
             for _ in range(blank-1): bc.add_paragraph()
         fix_table(tbl,[6.5])
 
-    # one video per page
-    for i, v in enumerate(data.get("videos",[]), 1):
-        vp=doc.add_paragraph(); vp.paragraph_format.page_break_before=True
+    # one video per page (mains first, then a BACKUP SCRIPTS section)
+    main_n=0; backup_n=0; backup_started=False
+    for v in data.get("videos",[]):
+        is_backup=bool(v.get("backup"))
+        first_backup = is_backup and not backup_started
+        if first_backup:
+            backup_started=True
+            dp=doc.add_paragraph(); dp.paragraph_format.page_break_before=True; dp.paragraph_format.space_after=Pt(2)
+            dr=dp.add_run("BACKUP SCRIPTS"); dr.bold=True; dr.font.size=Pt(18)
+            sub=doc.add_paragraph(); sub.paragraph_format.space_after=Pt(8)
+            sbr=sub.add_run("Spares — swap one in if a main can't be shot. Approved like the rest."); sbr.font.size=Pt(10); sbr.font.color.rgb=LABELGRAY
+        if is_backup:
+            backup_n+=1; label=f"Backup {backup_n}"
+        else:
+            main_n+=1; label=f"Video {main_n}"
+        vp=doc.add_paragraph()
+        if not first_backup:
+            vp.paragraph_format.page_break_before=True
         vp.paragraph_format.space_before=Pt(2); vp.paragraph_format.space_after=Pt(6)
-        vr=vp.add_run(f"Video {i}"); vr.bold=True; vr.font.size=Pt(16)
+        vr=vp.add_run(label); vr.bold=True; vr.font.size=Pt(16)
         if str(v.get("verdict","")).lower()=="approved":
             vr.font.highlight_color=WD_COLOR_INDEX.BRIGHT_GREEN  # keep client-approved videos green
         fields_grid(v.get("topic",""), v.get("format",""), v.get("format_link"), v.get("text_hook",""))
@@ -187,6 +213,15 @@ def build(data, out_path):
         boxed_section("EDITOR NOTES  —  for the editor: what to shoot / how to cut (not spoken)", text=(v.get("editor_notes") or None), blank=2)
         spacer(4)
         boxed_section("SCRIPT", lines=(v.get("script") or None), blank=6)
+        spacer(4)
+        boxed_section("SHOT STATUS  —  videographer: after the shoot, note what happened in your own words (shot it / redo next time / skipped + why)",
+                      text=(v.get("shot_status") or None), blank=2, fill=STATUS_FILL)
+
+    # a general recap box the videographer can fill at the end of the day
+    np=doc.add_paragraph(); np.paragraph_format.page_break_before=True; np.paragraph_format.space_before=Pt(2); np.paragraph_format.space_after=Pt(6)
+    nr=np.add_run("Videography Notes"); nr.bold=True; nr.font.size=Pt(16)
+    boxed_section("VIDEOGRAPHY NOTES  —  overall recap of the shoot day (what got dropped or changed, and why)",
+                  text=(data.get("videography_notes") or None), blank=8, fill=STATUS_FILL)
 
     doc.save(out_path)
 

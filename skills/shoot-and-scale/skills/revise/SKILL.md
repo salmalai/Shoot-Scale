@@ -1,6 +1,6 @@
 ---
 name: revise
-description: Turn a client's marked-up Script Doc into the next version of the SAME living doc, and learn from it. Use for /revise, "revise [client]", "read the revisions", "client sent back the doc", or "add this idea to [client]'s doc". Reads each video's verdict (green=approved, yellow=change, red=no) + comments, then locks greens, reworks yellows, drops reds (logging why), turns comment ideas into new scripts, updates the same file in place, and learns durable facts into Client-Memory.
+description: Turn a client's marked-up Script Doc into the next version of the SAME living doc, and learn from it. Use for /revise, "revise [client]", "read the revisions", "client sent back the doc", or "add this idea to [client]'s doc". Reads each video's verdict (green=approved, yellow=change, red=no) + comments, then locks greens, reworks yellows, drops reds (logging why), turns comment ideas into new scripts, updates the same file in place, and learns durable facts into Client-Memory. Once every video is approved it's ready to shoot; the videographer later writes what happened in each video's SHOT STATUS box (the ledgers are written from that, not from approval).
 ---
 
 # Revise
@@ -71,21 +71,40 @@ Take the `read_review.py` JSON as your base, change only the videos you touched 
 Overwrite the **same file** — same name (`<Client> - Scripts - Shoot <N>`), same link. Never write a
 new file, never rename. (Approved videos rebuild green; reworked/new ones rebuild pending.)
 
-## Step 6 — Update the Shot-History ledger
-For every **approved** video, append a line to `clients/<Client Name>/Strategy/Shot-History.md` so
-`/produce` never repeats it: `Shoot <N> | <topic> | <angle> | <format> | <text hook>`. This is the
-memory that keeps shoot 6 from repeating shoot 2. (If the ledger doesn't exist yet, create it and
-backfill it from the prior shoots' Scripts docs first.)
+## Step 6 — Don't write the ledgers here (and there's nothing to "lock")
+Do **not** write Shot-History or the roster ledger in `/revise`. Client-green means *approved*, not
+*shot* — and approved videos don't always get filmed. Those ledgers are written later, from what the
+**videographer** actually reports in the SHOT STATUS boxes, during the next `/produce`'s Step 0.5
+reconciliation. Writing them on approval is exactly the bug that let Shot-History claim videos that
+never got shot.
+
+**The doc never changes shape.** Every rebuild already includes a **SHOT STATUS** box on each video and
+a **Videography Notes** box at the end (the builder always adds them) — so there is no separate "shoot
+version" to switch to and nothing to lock. Once every video is green, just tell the operator plainly:
+> "All approved and ready to shoot. After the shoot, the videographer writes what happened in each
+> video's SHOT STATUS box — in their own words — plus the Videography Notes box. Next time we
+> `/produce`, I'll read those and update the history."
+
+If videos are still yellow/pending, it's **not** ready — keep looping the review (Steps 4–5).
 
 ## Step 7 — Report + loop
 Tell the operator plainly what changed ("locked 2, reworked 1, dropped 1 and added your dog-training
 idea"). The reworked/new videos are pending, so the client reviews again. Repeat until every video is
-green — then the shoot is final.
+green — then it's approved and ready to shoot (see **Step 6**); the videographer fills the SHOT STATUS
+boxes after filming.
 
 ## Single-idea add (the quick path)
 "Add this idea to [client]'s doc for the shoot" isn't a full review — find the shoot's Script Doc,
 read it, append ONE new `pending` video (their idea, best-fit bank format, respecting no-gos),
 re-read, and overwrite the same file. Same living-doc rule.
+
+**New client ideas belong in the Idea Bank.** Whenever the client sends a brand-new "make a video like
+this" idea — whether it arrives here as a comment, a red-verdict alternative, or a "please also do X" —
+first log it to `Strategy/Idea-Bank.docx` (a Word doc): if you're scripting it right now this shoot,
+paste it under **Used ideas** stamped `Used — Shoot <N>, <date>`; if you're only capturing it for later,
+paste it under **Open ideas** so the next `/produce` can pick it up. The Idea Bank is the durable home
+for every idea, and each one is used only once. Edit that `.docx` in place — never convert it to a
+Google Doc.
 
 ## Cowork test note
 To read: materialize the file bytes (Drive connector download or the mount) and run `read_review.py`.

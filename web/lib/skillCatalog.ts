@@ -1,10 +1,15 @@
 // Plain data, no filesystem access — safe to import from client components
 // (the "/" command menu) as well as server code (system prompt building).
 
-export const SKILL_NAMES = ["snapshot", "bullseye", "analyze", "create-format", "produce", "revise"] as const;
+export const SKILL_NAMES = ["onboarding", "snapshot", "bullseye", "analyze", "create-format", "produce", "revise"] as const;
 export type SkillName = (typeof SKILL_NAMES)[number];
 
 export const SKILL_CATALOG: { name: SkillName; command: string; description: string }[] = [
+  {
+    name: "onboarding",
+    command: "/onboarding",
+    description: "Stand up a brand-new client end-to-end — folders, Snapshot, Bullseye, and Content Analysis in one go.",
+  },
   {
     name: "snapshot",
     command: "/snapshot",

@@ -66,6 +66,7 @@ def main(path):
     header = {"client": "", "ig": "", "shoot": ""}
     videos = []
     loose_comments = []
+    videography_notes = ""
     cur = None
     seen_header = False
 
@@ -79,15 +80,17 @@ def main(path):
         tag = child.tag
         if tag == qn('w:p'):
             txt = para_text(child).strip()
-            m = re.match(r"^Video\s+(\d+)$", txt)
+            m = re.match(r"^(Video|Backup)\s+(\d+)$", txt)
             if m:
-                # verdict from the title run highlight
+                # verdict from the title run highlight.
+                # review phase: approved/change/reject. shoot phase (same colors): shot/save-for-next/killed.
                 verdict = "pending"
                 for r in child.iter(qn('w:r')):
                     hv = run_highlight(r)
                     if hv in VERDICT:
                         verdict = VERDICT[hv]; break
-                cur = {"verdict": verdict, "topic": "", "format": "", "format_link": "",
+                cur = {"verdict": verdict, "backup": (m.group(1) == "Backup"),
+                       "shot_status": "", "topic": "", "format": "", "format_link": "",
                        "text_hook": "", "editor_notes": "", "script": [], "comments": []}
                 videos.append(cur)
             elif txt.startswith("Client:") and not header["client"]:
@@ -108,6 +111,18 @@ def main(path):
             if not rows:
                 continue
             first = cell_text(rows[0].findall(qn('w:tc'))[0]).strip().upper()
+            # the per-video SHOT STATUS box (videographer writes, in their own words, what happened)
+            if first.startswith("SHOT STATUS"):
+                body_cell = rows[1].findall(qn('w:tc'))[0] if len(rows) > 1 else None
+                if cur is not None and body_cell is not None:
+                    cur["shot_status"] = cell_text(body_cell).strip()
+                continue
+            # the shoot-phase Videography Notes box (day recap) -> top-level field
+            if first.startswith("RECAP OF THE DAY") or first.startswith("VIDEOGRAPHY NOTES"):
+                body_cell = rows[1].findall(qn('w:tc'))[0] if len(rows) > 1 else None
+                if body_cell is not None:
+                    videography_notes = cell_text(body_cell).strip()
+                continue
             # comment refs inside the table
             for ref in child.iter(qn('w:commentReference')):
                 cid = ref.get(qn('w:id'))
@@ -165,7 +180,8 @@ def main(path):
                             cur["script"].append({"runs": segs, "marker": ""})
 
     out = {"shoot": header["shoot"], "client": header["client"], "ig": header["ig"],
-           "videos": videos, "loose_comments": loose_comments}
+           "videos": videos, "loose_comments": loose_comments,
+           "videography_notes": videography_notes}
     print(json.dumps(out, ensure_ascii=False, indent=2))
 
 if __name__ == "__main__":

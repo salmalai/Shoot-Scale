@@ -1,7 +1,7 @@
 {
   "name": "shoot-and-scale-content-system",
-  "version": "4.3.0",
-  "description": "Shoot & Scale's content engine. Six skills: snapshot (client identity), bullseye (niche + content-mix), analyze (living Content Analysis from the client's own videos), create-format (bank a reusable format), produce (confirm the shoot, pitch the format split, write hook-graded scripts, build the branded doc), and revise (turn the client's green/yellow/red markup + comments into the next version of the same living doc, and learn from it). Formats are bank-only; runs on Sandcastles.",
+  "version": "4.9.0",
+  "description": "Shoot & Scale's content engine. Seven skills — onboarding, snapshot, bullseye, analyze, create-format, produce, revise — take a client from setup to ready-to-shoot scripts. Per-client living docs, a dated analysis-JSON archive, a living Idea Bank Word doc (used-once), backups, and a confirmed-shot model: the client reviews by highlighting, the videographer notes each SHOT STATUS box, and Shot-History logs only what was actually shot. Formats are bank-only; runs on Sandcastles.",
   "author": {
     "name": "Shoot & Scale"
   },
@@ -9,12 +9,14 @@
     "short-form",
     "video",
     "content",
+    "onboarding",
     "snapshot",
     "bullseye",
     "analyze",
     "format",
     "produce",
     "revise",
+    "idea-bank",
     "shoot",
     "scripts",
     "sandcastles",

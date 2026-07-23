@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: Deep-read a client's OWN videos into a living Content Analysis doc — what's working vs. flopping, by format and topic — and surface repeatable format candidates from their winners for approval into the Format Bank. Use for /analyze, "analyze [client]", "what's working for [client]", or "deep dive [client]'s channel". Runs on Sandcastles: switch into the client's workspace first, then read a JSON export. Competitor analysis is out of scope.
+description: Deep-read a client's OWN videos into a living Content Analysis doc — what's working vs. flopping, by format and topic — so /produce can double down on winners and stop repeating flops. Use for /analyze, "analyze [client]", "what's working for [client]", or "deep dive [client]'s channel". Runs on Sandcastles: switch into the client's workspace first, then read a JSON export. Competitor analysis is out of scope.
 ---
 
 # Analyze
@@ -24,6 +24,11 @@ to the client root for older clients. The Format Bank
 (`format-bank/`) is global. Refer to Sandcastles tools by plain names (`list_workspaces`,
 `switch_workspace`, `channel_recap`) — never hardcode a server prefix. The deep read comes from a
 **JSON export**, NOT from per-video tool calls.
+
+**Where the JSON lives:** every export is archived in `clients/<Client Name>/Strategy/Analysis JSON/`
+with a **dated** filename (e.g. `Content Analysis 2026-07-22.json`). When the operator hands you a new
+export, save it there first, then read it. On a re-run, the most recent dated file in that folder is the
+latest data. (This is also the final step of `/onboarding`.)
 
 ## Step 0 — Switch into the client's Sandcastles workspace FIRST (non-negotiable)
 Before ANY pull: `list_workspaces` → `switch_workspace` into the **client's own workspace** (each
@@ -70,28 +75,21 @@ Tally against outlier score, and write two clean buckets:
 - **Working** — the formats behind their biggest outliers → double down.
 - **Flopping** — formats that consistently underperform on their page → `/produce` must NOT reuse
   these (this is the client-specific subtract). Name them explicitly.
-- Note which "working" formats map to an existing **Format Bank brick** vs. which are structures not
-  yet banked.
+- Note which "working" formats already map to an existing **Format Bank brick** (name/number), so
+  `/produce` can reach for the right brick and double down. This is just a reference mapping for
+  producing content — do NOT pitch, vet, or bank anything.
 
 **TOPICS**
 - **Working** — subject territories that consistently overperform (cluster, rank by outlier, cite
   2–3 examples with links). These become the client's proven topic bank for `/produce`.
 - **Flopping / off-ICP** — topics that pull the wrong audience or fall flat.
 
-## Step 4 — Surface format candidates (the format-vetting gate)
-From the winners, spot any structure that *could* be templatized into a reusable, niche-agnostic
-brick. **Hand the user the link and ask** — "this structure keeps winning for them; is it a
-repeatable format we could bank for every client?" You decide most are no; that's correct. For each
-**yes**, hand off to `/create-format` (which optimizes, visualizes across 3 niches, and banks it).
-Never bank a format here directly, and never invent one.
-
-## Step 5 — Write / update the living Content Analysis doc
+## Step 4 — Write / update the living Content Analysis doc
 Overwrite `Content-Analysis.md` in place (one current version), dated, with a short changelog entry:
 - **Headline finding** — the one structural truth this run.
 - **Formats: Working / Flopping** (with bank-brick mapping + the explicit do-not-reuse list).
 - **Topics: Working / Flopping-or-off-ICP** (with example links — the proven topic bank).
 - **Boosted / floor screen** — what you excluded and why.
-- **Format candidates** — any surfaced, with links + status (pending / approved → banked / rejected).
 - **Changelog** — date, videos analyzed, what changed vs. last run.
 
 On a re-run after a shoot: fold in how the new posts did, move formats/topics between buckets as the
@@ -100,5 +98,4 @@ stale.
 
 ## Hand-off
 "Analysis is current — we now know what's working and what to avoid for them. Want me to produce a
-batch?" (that's `/produce`). A format worth banking → route to `/create-format`. Keep talk plain —
-don't expose file paths unless asked.
+batch?" (that's `/produce`). Keep talk plain — don't expose file paths unless asked.
