@@ -13,6 +13,7 @@ import {
 import { readFormatBankIndex, readFormatBrick, writeFormatBrick, findFormatBySource } from "@/lib/tools/formatBank";
 import { readSandcastlesExport } from "@/lib/tools/sandcastles";
 import { buildAndUploadScriptDoc, findScriptDocs, readScriptDocReview } from "@/lib/tools/scriptDoc";
+import { readIdeaBank, updateIdeaBank } from "@/lib/tools/ideaBank";
 import { callSandcastlesTool } from "@/lib/sandcastlesMcp";
 
 const SKILL_NAME_LIST = SKILL_NAMES as unknown as string[];
@@ -226,6 +227,30 @@ export const CHAT_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "read_idea_bank",
+    description:
+      "Read a client's Idea Bank (Strategy/Idea-Bank.docx) — client-sent \"make a video like this\" ideas split into open_ideas (not yet used) and used_ideas (already scripted, never reuse). Returns exists:false with empty lists if the client has no idea bank yet (create-if-missing — that's normal for a brand-new client, not an error). Call this before /produce pitches a batch (honor open ideas) and whenever a new client idea needs logging.",
+    input_schema: {
+      type: "object",
+      properties: { client_id: { type: "string" } },
+      required: ["client_id"],
+    },
+  },
+  {
+    name: "update_idea_bank",
+    description:
+      "Overwrite a client's Idea Bank in place with the COMPLETE new open_ideas and used_ideas lists (whole-file rewrite, not a diff) — same rule as the Script Doc. Read the current state with read_idea_bank first, then pass back every idea in its correct list: moving a newly-scripted idea out of open_ideas into used_ideas, stamped e.g. \"<original idea text> — Used — Shoot 3, 2026-07-24 -> Topic Name\". Creates Strategy/Idea-Bank.docx fresh if this client doesn't have one yet.",
+    input_schema: {
+      type: "object",
+      properties: {
+        client_id: { type: "string" },
+        open_ideas: { type: "array", items: { type: "string" } },
+        used_ideas: { type: "array", items: { type: "string" } },
+      },
+      required: ["client_id", "open_ideas", "used_ideas"],
+    },
+  },
+  {
     name: "list_workspaces",
     description:
       "Lists all Sandcastles workspaces the connected account has access to, including which one is currently active. Real Sandcastles call — does not consume credits.",
@@ -327,6 +352,10 @@ export function describeToolCall(name: string, input: Record<string, unknown>): 
       return "Reading the marked-up Script Doc…";
     case "generate_and_upload_script_doc":
       return input.existing_file_id ? "Rebuilding the Script Doc in place…" : "Building the Script Doc and uploading it to Drive…";
+    case "read_idea_bank":
+      return "Reading the Idea Bank…";
+    case "update_idea_bank":
+      return "Updating the Idea Bank…";
     case "list_workspaces":
       return "Listing Sandcastles workspaces…";
     case "switch_workspace":
@@ -429,6 +458,14 @@ export async function executeTool(
         ctx.chatSessionId,
         input,
         input.existing_file_id as string | undefined
+      );
+    case "read_idea_bank":
+      return await readIdeaBank(resolveClientId(input, ctx));
+    case "update_idea_bank":
+      return await updateIdeaBank(
+        resolveClientId(input, ctx),
+        (input.open_ideas as string[] | undefined) ?? [],
+        (input.used_ideas as string[] | undefined) ?? []
       );
     case "list_workspaces":
       return await callSandcastlesTool("list_workspaces", {});

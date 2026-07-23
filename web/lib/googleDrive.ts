@@ -189,6 +189,24 @@ async function findFolderPath(segments: string[]): Promise<string | undefined> {
   return parentId;
 }
 
+// Read-only lookup for a binary file's id by exact name (e.g. Idea-Bank.docx) — doesn't try to read
+// it as text like readMarkdownFromDrive does, just resolves the id so the caller can decide whether
+// to download it (via downloadDriveFileBuffer) or update it in place (existingFileId).
+export async function findFileIdInFolder(folderPath: string[], filename: string): Promise<string | undefined> {
+  const folderId = await findFolderPath(folderPath);
+  if (!folderId) return undefined;
+
+  const drive = getDriveClient();
+  const escapedName = filename.replace(/'/g, "\\'");
+  const { data } = await drive.files.list({
+    q: `'${folderId}' in parents and name = '${escapedName}' and trashed = false`,
+    fields: "files(id)",
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+  return data.files?.[0]?.id ?? undefined;
+}
+
 // Looks for a doc already sitting in this client's Drive folder (e.g. mirrored from the original
 // repo, or placed there manually) so the chat can pick it up automatically instead of asking the
 // user to paste content that's already sitting right there.
